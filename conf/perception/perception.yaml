@@ -1,3 +1,0 @@
-defaults:
-  - segmentation: GridMobileSAM
-  - _self_
