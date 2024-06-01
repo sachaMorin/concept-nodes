@@ -5,5 +5,5 @@ mask_generator:
   box_nms_thresh: .5
   pred_iou_thresh: .94
 model_type: "vit_t"
-checkpoint_path: ${checkpoint_path}/mobile_sam.pt
+checkpoint_path: ${cache_dir}/mobile_sam.pt
 device: cuda

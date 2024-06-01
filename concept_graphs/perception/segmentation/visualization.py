@@ -4,6 +4,7 @@ import torchvision
 import torchvision.transforms.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 
 def plot_grid_images(images: List[Union[np.ndarray, torch.Tensor]], grid_width: int = 4) -> None:
@@ -30,6 +31,16 @@ def plot_segments(image: np.ndarray, masks: torch.Tensor) -> None:
     np.random.seed(42)
     random_colors = [(r, g, b) for r, g, b in (255 * torch.rand((masks.shape[0], 3))).int()]
     img_with_segmentations = torchvision.utils.draw_segmentation_masks(image, masks, colors=random_colors)
+    plt.axis("off")
+    plt.imshow(F.to_pil_image(img_with_segmentations))
+
+def plot_segments_similarity(image: np.ndarray, masks: torch.Tensor, similarities: torch.Tensor) -> None:
+    image = torchvision.transforms.ToTensor()(image)
+    similarities = (similarities - similarities.min()) / (similarities.max() - similarities.min())
+    cmap = cm.get_cmap("viridis")
+    colors = [cmap(sim.item())[:3] for sim in similarities]
+    colors = [(int(255 * c[0]), int(255 * c[1]), int(255 * c[2])) for c in colors]
+    img_with_segmentations = torchvision.utils.draw_segmentation_masks(image, masks, colors=colors)
     plt.axis("off")
     plt.imshow(F.to_pil_image(img_with_segmentations))
 

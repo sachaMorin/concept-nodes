@@ -1,0 +1,5 @@
+_target_: concept_graphs.perception.ft_extraction.CLIP.CLIP
+model_name: ViT-B-32
+pretrained: laion2b_s34b_b79k
+cache_dir: ${cache_dir}
+device: cuda

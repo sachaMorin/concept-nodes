@@ -1,6 +1,7 @@
 defaults:
   - dataset: Replica
   - segmentation: GridMobileSAM
+  - ft_extraction: CLIP
   - _self_
 
-checkpoint_path: /home/sacha/Documents/cg-plus/model_checkpoints
+cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
