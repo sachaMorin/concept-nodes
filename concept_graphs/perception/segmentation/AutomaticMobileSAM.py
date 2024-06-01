@@ -6,11 +6,18 @@ from mobile_sam import sam_model_registry
 from mobile_sam import SamAutomaticMaskGenerator
 
 from .SegmentationModel import SegmentationModel
-from .utils import get_grid_coords
+
+
+def box_xywh_to_xyxy(box_xywh: torch.Tensor) -> torch.Tensor:
+    box_xyxy = torch.clone(box_xywh)
+    box_xyxy[:, 2] = box_xyxy[:, 0] + box_xyxy[:, 2]
+    box_xyxy[:, 3] = box_xyxy[:, 1] + box_xyxy[:, 3]
+    return box_xyxy
 
 
 class AutomaticMobileSAM(SegmentationModel):
-    def __init__(self, mask_generator: SamAutomaticMaskGenerator, model_type: str, checkpoint_path: str, device: str = "cuda"):
+    def __init__(self, mask_generator: SamAutomaticMaskGenerator, model_type: str, checkpoint_path: str,
+                 device: str = "cuda"):
         """Mobile-SAM model with grid-based prompting."""
         self.model_type = model_type
         self.checkpoint_path = checkpoint_path
@@ -24,6 +31,15 @@ class AutomaticMobileSAM(SegmentationModel):
 
     def __call__(self, img: np.ndarray) -> Dict[str, torch.Tensor]:
         anns = self.predictor.generate(img)
-        masks = torch.stack([torch.from_numpy(ann["segmentation"]) for ann in anns])
+        masks, bbox, score = [], [], []
 
-        return {"masks": masks}
+        for ann in anns:
+            masks.append(torch.from_numpy(ann["segmentation"]))
+            bbox.append(torch.tensor(ann["bbox"]))
+            score.append(ann["predicted_iou"])
+
+        result = {"masks": torch.stack(masks), "bbox": torch.stack(bbox), "scores": torch.tensor(score)}
+
+        result["bbox"] = box_xywh_to_xyxy(result["bbox"])
+
+        return result

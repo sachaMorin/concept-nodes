@@ -16,8 +16,10 @@ class SegmentationModel:
 
         Returns
         -------
-        masks: Dict[str, torch.Tensor]
-            The "masks" key should be a boolean tensor of size (N, H, W) where N is the number of masks predicted.
+        output: Dict[str, torch.Tensor]
+            masks: boolean tensor of size (N, H, W) where N is the number of masks predicted.
+            bbox: int tensor of size (N, 4) following the format (x_min, y_min, x_max, y_mx).
+            scores: float tensor of size (N,).
             Additional keys can be added.
 
         """

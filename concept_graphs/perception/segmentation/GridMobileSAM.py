@@ -3,6 +3,7 @@ import torch
 import numpy as np
 
 from mobile_sam import sam_model_registry, SamPredictor
+from mobile_sam.utils.amg import batched_mask_to_box
 
 from .SegmentationModel import SegmentationModel
 from .utils import get_grid_coords
@@ -36,5 +37,6 @@ class GridMobileSAM(SegmentationModel):
         best = torch.argmax(iou_predictions, dim=1)
         masks = masks[torch.arange(masks.size(0)), best]
         iou_predictions = iou_predictions[torch.arange(iou_predictions.size(0)), best]
+        bbox = batched_mask_to_box(masks)
 
-        return {"masks": masks, "iou_predictions": iou_predictions}
+        return {"masks": masks, "bbox": bbox,  "scores": iou_predictions}

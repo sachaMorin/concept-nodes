@@ -25,9 +25,19 @@ def plot_grid_images(images: List[Union[np.ndarray, torch.Tensor]], grid_width: 
     plt.tight_layout()
 
 
-def plot_segments(image: Union[np.ndarray, torch.Tensor], masks: torch.Tensor) -> None:
-    if type(image) is not torch.Tensor:
-        image = torchvision.transforms.ToTensor()(image)
+def plot_segments(image: np.ndarray, masks: torch.Tensor) -> None:
+    image = torchvision.transforms.ToTensor()(image)
+    np.random.seed(42)
     random_colors = [(r, g, b) for r, g, b in (255 * torch.rand((masks.shape[0], 3))).int()]
     img_with_segmentations = torchvision.utils.draw_segmentation_masks(image, masks, colors=random_colors)
+    plt.axis("off")
     plt.imshow(F.to_pil_image(img_with_segmentations))
+
+
+def plot_bbox(image: np.ndarray, bbox: torch.Tensor) -> None:
+    image = (255 * torchvision.transforms.ToTensor()(image)).to(torch.uint8)
+    np.random.seed(42)
+    random_colors = [(r, g, b) for r, g, b in (255 * torch.rand((bbox.shape[0], 3))).int()]
+    img_with_bbox = torchvision.utils.draw_bounding_boxes(image, bbox, colors=random_colors, width=3)
+    plt.axis("off")
+    plt.imshow(F.to_pil_image(img_with_bbox))
