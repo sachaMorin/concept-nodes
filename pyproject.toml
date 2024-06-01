@@ -1,0 +1,15 @@
+[project]
+name = "concept-graphs"
+version = "0.0.0"
+dependencies = [
+    "torch",
+    "torchvision",
+    "open3d",
+    "hydra-core",
+    "mobile_sam@git+https://github.com/ChaoningZhang/MobileSAM.git",
+    "open_clip_torch",
+]
+requires-python = ">=3.8"
+
+[tool.setuptools]
+py-modules = []

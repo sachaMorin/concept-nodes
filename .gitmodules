@@ -1,0 +1,3 @@
+[submodule "rgbd-dataset"]
+	path = rgbd-dataset
+	url = https://github.com/sachaMorin/rgbd-dataset.git
