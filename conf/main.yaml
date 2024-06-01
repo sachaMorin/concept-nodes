@@ -1,3 +1,6 @@
 defaults:
   - dataset: Replica
+  - perception/segmentation: GridMobileSAM
   - _self_
+
+checkpoint_path: /home/sacha/Documents/cg-plus/model_checkpoints
