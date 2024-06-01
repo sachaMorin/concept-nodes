@@ -4,3 +4,4 @@ grid_height: 8
 model_type: "vit_t"
 checkpoint_path: ${checkpoint_path}/mobile_sam.pt
 device: cuda
+nms_iou_threshold: 0.5

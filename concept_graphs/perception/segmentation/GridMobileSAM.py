@@ -4,19 +4,22 @@ import numpy as np
 
 from mobile_sam import sam_model_registry, SamPredictor
 from mobile_sam.utils.amg import batched_mask_to_box
+from torchvision.ops.boxes import batched_nms
 
 from .SegmentationModel import SegmentationModel
 from .utils import get_grid_coords
 
 
 class GridMobileSAM(SegmentationModel):
-    def __init__(self, grid_width: int, grid_height: int, model_type: str, checkpoint_path: str, device: str = "cuda"):
+    def __init__(self, grid_width: int, grid_height: int, model_type: str, checkpoint_path: str,
+                 nms_iou_threshold: float, device: str):
         """Mobile-SAM model with grid-based prompting."""
+        self.grid_width = grid_width
+        self.grid_height = grid_height
         self.model_type = model_type
         self.checkpoint_path = checkpoint_path
         self.device = device
-        self.grid_width = grid_width
-        self.grid_height = grid_height
+        self.nms_iou_threshold = nms_iou_threshold
 
         mobile_sam = sam_model_registry[self.model_type](checkpoint=self.checkpoint_path)
         mobile_sam.to(device=self.device)
@@ -38,5 +41,9 @@ class GridMobileSAM(SegmentationModel):
         masks = masks[torch.arange(masks.size(0)), best]
         iou_predictions = iou_predictions[torch.arange(iou_predictions.size(0)), best]
         bbox = batched_mask_to_box(masks)
+
+        # Nms
+        keep = batched_nms(bbox.to(torch.float), iou_predictions, torch.zeros_like(iou_predictions), self.nms_iou_threshold)
+        masks, bbox, iou_predictions = masks[keep], bbox[keep], iou_predictions[keep]
 
         return {"masks": masks, "bbox": bbox,  "scores": iou_predictions}
