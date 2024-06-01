@@ -2,6 +2,11 @@ from typing import Dict
 import torch
 import numpy as np
 
+import warnings
+
+# Filter out user warnings from a specific package
+warnings.filterwarnings("ignore", category=UserWarning, module="mobile_sam")
+
 from mobile_sam import sam_model_registry, SamPredictor
 from mobile_sam.utils.amg import batched_mask_to_box
 from torchvision.ops.boxes import batched_nms
