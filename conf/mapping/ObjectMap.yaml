@@ -1,0 +1,4 @@
+_target_: concept_graphs.mapping.ObjectMap.ObjectMap
+geometric_sim_thresh: .5
+semantic_sim_thresh: .5
+device: cuda

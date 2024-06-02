@@ -3,6 +3,7 @@ defaults:
   - perception: PerceptionPipeline
   - segmentation: GridMobileSAM  # Keep top level for easier overrides
   - ft_extraction: CLIP # Keep top level for easier overrides
+  - mapping: ObjectMap
   - _self_
 
 cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
