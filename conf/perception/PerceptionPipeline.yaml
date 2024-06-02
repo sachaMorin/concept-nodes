@@ -1,0 +1,4 @@
+_target_: concept_graphs.perception.PerceptionPipeline.PerceptionPipeline
+segmentation_model: ???
+ft_extractor: ???
+depth_trunc: 8.0

@@ -1,7 +1,8 @@
 defaults:
   - dataset: Replica
-  - segmentation: GridMobileSAM
-  - ft_extraction: CLIP
+  - perception: PerceptionPipeline
+  - segmentation@perception.segmentation_model: GridMobileSAM
+  - ft_extraction@perception.ft_extractor: CLIP
   - _self_
 
 cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints

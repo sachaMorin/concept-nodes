@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Tuple
 import torch
 import numpy as np
 
@@ -34,7 +34,7 @@ class AutomaticMobileSAM(SegmentationModel):
 
         self.predictor = mask_generator(model=mobile_sam)
 
-    def __call__(self, img: np.ndarray) -> Dict[str, torch.Tensor]:
+    def __call__(self, img: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         anns = self.predictor.generate(img)
         masks, bbox, score = [], [], []
 
@@ -43,8 +43,8 @@ class AutomaticMobileSAM(SegmentationModel):
             bbox.append(torch.tensor(ann["bbox"]))
             score.append(ann["predicted_iou"])
 
-        result = {"masks": torch.stack(masks), "bbox": torch.stack(bbox), "scores": torch.tensor(score)}
+        masks, bbox, score = torch.stack(masks), torch.stack(bbox), torch.tensor(score)
+        bbox = box_xywh_to_xyxy(bbox)
 
-        result["bbox"] = box_xywh_to_xyxy(result["bbox"])
+        return masks, bbox, score
 
-        return result

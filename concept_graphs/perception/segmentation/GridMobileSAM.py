@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Tuple
 import torch
 import numpy as np
 
@@ -37,7 +37,7 @@ class GridMobileSAM(SegmentationModel):
                                            inference_image_size, self.device).unsqueeze(1)
         self.labels = torch.ones(grid_width * grid_height, 1).to(self.device)
 
-    def __call__(self, img: np.ndarray) -> Dict[str, torch.Tensor]:
+    def __call__(self, img: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         self.predictor.set_image(img)
         masks, iou_predictions, _ = self.predictor.predict_torch(point_coords=self.grid_coords,
                                                                  point_labels=self.labels,
@@ -57,4 +57,4 @@ class GridMobileSAM(SegmentationModel):
         keep = batched_nms(bbox.to(torch.float), iou_predictions, torch.zeros_like(iou_predictions), self.nms_iou_threshold)
         masks, bbox, iou_predictions = masks[keep], bbox[keep], iou_predictions[keep]
 
-        return {"masks": masks, "bbox": bbox,  "scores": iou_predictions}
+        return masks, bbox, iou_predictions
