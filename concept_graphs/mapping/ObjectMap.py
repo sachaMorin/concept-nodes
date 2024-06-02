@@ -7,12 +7,12 @@ import open3d as o3d
 
 class ObjectMap:
 
-    def __init__(self, geometric_sim_thresh: float = 0.5, semantic_sim_thresh: float = 0.5, device: str = "cpu"):
+    def __init__(self, max_centroid_dist: float = 0.5, semantic_sim_thresh: float = 0.5, device: str = "cpu"):
         self.current_id = 0
         self.objects: Dict[int, Object] = dict()
         self.semantic_ft: torch.Tensor = None
         self.centroids: torch.Tensor = None
-        self.geometric_sim_thresh = geometric_sim_thresh
+        self.max_centroid_dist = max_centroid_dist
         self.semantic_sim_thresh = semantic_sim_thresh
         self.device = device
 
@@ -77,7 +77,7 @@ class ObjectMap:
         semantic_sim = self.semantic_ft @ other.semantic_ft.t()
 
         geometric_sim = torch.cdist(self.centroids, other.centroids)
-        is_close = geometric_sim < self.geometric_sim_thresh
+        is_close = geometric_sim < self.max_centroid_dist
 
         sim = torch.where(is_close, semantic_sim, -1 * torch.ones_like(semantic_sim))
 
