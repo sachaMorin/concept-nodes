@@ -1,10 +1,10 @@
-from typing import List, Tuple, Union
+from typing import List, Union
 import torch
 import torchvision
 import torchvision.transforms.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+from .utils import similarities_to_rgb
 
 
 def plot_grid_images(images: List[Union[np.ndarray, torch.Tensor]], grid_width: int = 4) -> None:
@@ -34,12 +34,9 @@ def plot_segments(image: np.ndarray, masks: torch.Tensor) -> None:
     plt.axis("off")
     plt.imshow(F.to_pil_image(img_with_segmentations))
 
-def plot_segments_similarity(image: np.ndarray, masks: torch.Tensor, similarities: torch.Tensor) -> None:
+def plot_segments_similarity(image: np.ndarray, masks: torch.Tensor, similarities: np.ndarray) -> None:
     image = torchvision.transforms.ToTensor()(image)
-    similarities = (similarities - similarities.min()) / (similarities.max() - similarities.min())
-    cmap = cm.get_cmap("viridis")
-    colors = [cmap(sim.item())[:3] for sim in similarities]
-    colors = [(int(255 * c[0]), int(255 * c[1]), int(255 * c[2])) for c in colors]
+    colors = similarities_to_rgb(similarities, "viridis")
     img_with_segmentations = torchvision.utils.draw_segmentation_masks(image, masks, colors=colors)
     plt.axis("off")
     plt.imshow(F.to_pil_image(img_with_segmentations))
