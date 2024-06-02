@@ -3,7 +3,7 @@ import numpy as np
 from .ft_extraction.FeatureExtractor import FeatureExtractor
 from .segmentation.SegmentationModel import SegmentationModel
 from .rgbd_to_pcd import rgbd_to_object_pcd
-from .segmentation.utils import extract_crops
+from .segmentation.utils import extract_rgb_crops, extract_mask_crops
 
 
 class PerceptionPipeline:
@@ -16,7 +16,8 @@ class PerceptionPipeline:
         masks, bbox, scores = self.segmentation_model(rgb)
         masks, bbox, scores = masks.cpu().numpy(), bbox.cpu().numpy(), scores.cpu().numpy()
 
-        rgb_crops = extract_crops(rgb, bbox)
+        rgb_crops = extract_rgb_crops(rgb, bbox)
+        mask_crops = extract_mask_crops(masks, bbox)
 
         features = self.ft_extractor(rgb_crops)
         features = features.cpu().numpy()
@@ -27,6 +28,7 @@ class PerceptionPipeline:
             bbox=bbox,
             scores=scores,
             rgb_crops=rgb_crops,
+            mask_crops=mask_crops,
             features=features,
             pcd_points=pcd_points,
             pcd_rgb=pcd_rgb,

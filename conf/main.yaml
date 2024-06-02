@@ -1,8 +1,15 @@
 defaults:
   - dataset: Replica
   - perception: PerceptionPipeline
-  - segmentation@perception.segmentation_model: GridMobileSAM
-  - ft_extraction@perception.ft_extractor: CLIP
+  - segmentation: GridMobileSAM  # Keep top level for easier overrides
+  - ft_extraction: CLIP # Keep top level for easier overrides
   - _self_
 
 cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
+
+dataloader:
+  _target_:  torch.utils.data.DataLoader
+  batch_size: 1
+  shuffle: false
+  num_workers: 2
+  pin_memory: false

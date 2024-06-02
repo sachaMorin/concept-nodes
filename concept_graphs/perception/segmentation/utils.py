@@ -17,9 +17,17 @@ def bbox_area(bbox: torch.Tensor) -> torch.Tensor:
     return (bbox[:, 2] - bbox[:, 0]) * (bbox[:, 3] - bbox[:, 1])
 
 
-def extract_crops(img: np.ndarray, bbox: torch.Tensor) -> List[np.ndarray]:
+def extract_rgb_crops(img: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
     crops = []
     for box in bbox:
         crop = img[box[1]:box[3], box[0]:box[2]]
+        crops.append(crop)
+    return crops
+
+
+def extract_mask_crops(masks: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
+    crops = []
+    for mask, box in zip(masks, bbox):
+        crop = mask[box[1]:box[3], box[0]:box[2]]
         crops.append(crop)
     return crops
