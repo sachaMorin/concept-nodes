@@ -17,22 +17,24 @@ class Object:
         self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.)
         self.pcd.transform(camera_pose)
         self.centroid = np.mean(pcd_points, axis=0)
+        self.semantic_ft = semantic_ft
 
-    @property
-    def semantic_ft(self) -> np.ndarray:
+    def update_semantic_ft(self):
         """Pick the representative semantic vector from the views"""
         ft = [v.semantic_ft for v in self.views]
         ft = np.stack(ft, axis=0)
 
         mean = np.mean(ft, axis=0)
 
-        return mean/np.linalg.norm(mean, 2)
+        self.semantic_ft =  mean/np.linalg.norm(mean, 2)
 
     def __iadd__(self, other):
         self.views.extend(other.views)
         self.n_detections += other.n_detections
         self.pcd += other.pcd
-        self.pcd.voxel_down_sample(voxel_size=0.01)
+        if len(self.pcd.points) > 1000:
+            self.pcd = self.pcd.uniform_down_sample(every_k_points=2)
         self.centroid = .9 * self.centroid + .1 * other.centroid
+        self.update_semantic_ft()
 
         return self
