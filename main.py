@@ -22,11 +22,14 @@ def main(cfg: DictConfig):
     perception_pipeline = hydra.utils.instantiate(cfg.perception, segmentation_model=segmentation_model, ft_extractor=ft_extractor)
 
     log.info("Mapping...")
-    main_map = hydra.utils.instantiate(cfg.mapping)
+    progress_bar = tqdm(total=len(dataset))
+    progress_bar.set_description(f"Mapping")
     start = time.time()
     n_segments = 0
 
-    for obs in tqdm(dataloader):
+    main_map = hydra.utils.instantiate(cfg.mapping)
+
+    for obs in dataloader:
         segments = perception_pipeline(obs["rgb"], obs["depth"], obs["intrinsics"])
 
         local_map = hydra.utils.instantiate(cfg.mapping)
@@ -34,10 +37,10 @@ def main(cfg: DictConfig):
         n_segments += len(local_map)
 
         main_map += local_map
+        progress_bar.update(1)
+        progress_bar.set_postfix(objects = len(main_map), segments = n_segments)
 
     stop = time.time()
-
-    log.info("Detected segments: %d" % n_segments)
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
