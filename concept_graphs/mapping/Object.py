@@ -1,13 +1,16 @@
 from typing import List
 import numpy as np
 from .View import View
+from .ViewHeap import ViewHeap
 import open3d as o3d
 
 
 class Object:
     def __init__(self, rgb: np.ndarray, mask: np.ndarray, semantic_ft: np.ndarray, score: float, pcd_points: np.ndarray,
                  pcd_rgb: np.ndarray, camera_pose: np.ndarray):
-        self.views: List[View] = [View(rgb, mask, semantic_ft, score, camera_pose)]
+        """Initialize with first view."""
+        self.views = ViewHeap()
+        self.views.push(View(rgb, mask, semantic_ft, score, camera_pose))
         self.n_detections = 1
         self.pcd = o3d.geometry.PointCloud()
         self.pcd.points = o3d.utility.Vector3dVector(pcd_points)

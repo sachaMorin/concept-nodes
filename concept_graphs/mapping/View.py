@@ -8,3 +8,6 @@ class View:
         self.semantic_ft = semantic_ft
         self.score = score
         self.camera_pose = camera_pose
+
+    def __lt__(self, other):
+        return self.score < other.score
