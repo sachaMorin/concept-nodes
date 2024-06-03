@@ -20,3 +20,18 @@ class FeatureExtractor:
             Tensor of size (N, K) with image features.
         """
         raise NotImplementedError
+
+    def encode_text(self, texts: List[str]) -> torch.Tensor:
+        """
+
+        Parameters
+        ----------
+        texts: List[str]
+           List of N text strings.
+
+        Returns
+        -------
+        output: torch.Tensor
+            Tensor of size (N, K) with text features.
+        """
+        raise NotImplementedError

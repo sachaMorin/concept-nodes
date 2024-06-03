@@ -37,7 +37,7 @@ class GridMobileSAM(SegmentationModel):
         inference_image_size = mobile_sam.image_encoder.img_size
         self.grid_coords = get_grid_coords(grid_width, grid_height, inference_image_size,
                                            inference_image_size, self.device, jitter=self.grid_jitter,
-                                           uniform_jitter=True).unsqueeze(1)
+                                           uniform_jitter=False).unsqueeze(1)
         self.labels = torch.ones(grid_width * grid_height, 1).to(self.device)
 
     def __call__(self, img: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:

@@ -32,17 +32,18 @@ class ObjectMap:
 
     def from_perception(self, rgb_crops: List[np.ndarray], mask_crops: List[np.ndarray], features: np.ndarray,
                         scores: np.ndarray, pcd_points: List[np.ndarray], pcd_rgb: List[np.ndarray],
-                        camera_pose: np.ndarray):
+                        camera_pose: np.ndarray, is_bg: np.ndarray):
         n_objects = len(rgb_crops)
+        assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb) == len(is_bg)
 
-        assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb)
+        if not is_bg.all():
+            for i in range(len(rgb_crops)):
+                if not is_bg[i]:
+                    self.append(Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
+                                    camera_pose))
 
-        for i in range(len(rgb_crops)):
-            self.append(Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
-                              camera_pose))
-
-        self.semantic_ft = torch.from_numpy(features).to(self.device)
-        self.collate_geometry()
+            self.semantic_ft = torch.from_numpy(features[~is_bg]).to(self.device)
+            self.collate_geometry()
 
     def collate_geometry(self):
         centroids = list()
