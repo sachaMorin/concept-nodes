@@ -110,6 +110,6 @@ class ObjectMap:
         for i, obj in enumerate(self):
             rgb_crops = [v.rgb for v in obj.views]
             masks = [v.mask for v in obj.views]
-            plot_grid_images(rgb_crops, masks, grid_width=3)
+            plot_grid_images(rgb_crops, None, grid_width=3)
             plt.savefig(f"{save_dir}/{i}.png")
             plt.close()

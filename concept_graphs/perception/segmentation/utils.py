@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import numpy as np
 import torch
 
@@ -41,10 +41,13 @@ def safe_bbox_inflate(bbox: torch.Tensor, inflate_px: int, img_width: int, img_h
     return bbox
 
 
-def extract_rgb_crops(img: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
+def extract_rgb_crops(img: np.ndarray, bbox: np.ndarray, mask_crops: Union[List[np.ndarray], None] = None,
+                      bg_color: Union[int, None] = None) -> List[np.ndarray]:
     crops = []
-    for box in bbox:
+    for i, box in enumerate(bbox):
         crop = img[box[1]:box[3], box[0]:box[2]]
+        if mask_crops is not None and bg_color is not None:
+            crop = np.where(mask_crops[i][:, :, np.newaxis], crop, bg_color)
         crops.append(crop)
     return crops
 
