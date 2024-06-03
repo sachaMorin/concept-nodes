@@ -5,4 +5,4 @@ model_type: "vit_t"
 checkpoint_path: ${cache_dir}/mobile_sam.pt
 device: cuda
 nms_iou_threshold: 0.5
-min_box_area_px: 9
+min_mask_area_px: 49
