@@ -8,6 +8,7 @@ defaults:
 
 cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
 output_dir: /home/sacha/Documents/cg-plus/outputs
+seed: 123
 
 dataloader:
   _target_:  torch.utils.data.DataLoader

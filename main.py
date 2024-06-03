@@ -2,6 +2,7 @@ import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 import time
+from concept_graphs.seed import set_seed
 import logging
 
 # A logger for this file
@@ -11,6 +12,7 @@ log = logging.getLogger(__name__)
 @hydra.main(version_base=None, config_path="conf", config_name="main")
 def main(cfg: DictConfig):
     log.info("Loading data and models...")
+    set_seed(cfg.seed)
     dataset = hydra.utils.instantiate(cfg.dataset)
     dataloader = hydra.utils.instantiate(cfg.dataloader, dataset=dataset)
 
