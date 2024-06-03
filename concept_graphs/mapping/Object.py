@@ -29,6 +29,7 @@ class Object:
         self.views.extend(other.views)
         self.n_detections += other.n_detections
         self.pcd += other.pcd
-        self.centroid = np.asarray(self.pcd.points).mean(axis=0)
+        self.pcd.voxel_down_sample(voxel_size=0.01)
+        self.centroid = .9 * self.centroid + .1 * other.centroid
 
         return self
