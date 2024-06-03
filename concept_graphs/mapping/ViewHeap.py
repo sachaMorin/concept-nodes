@@ -10,6 +10,9 @@ class ViewHeap:
     def __iter__(self):
         return iter(self.heap)
 
+    def __repr__(self):
+        return f"ViewHeap of size {len(self.heap)} with max size {self.max_size} and view scores {[view.score for view in self]}"
+
     def push(self, view: View):
         if len(self.heap) < self.max_size:
             heapq.heappush(self.heap, view)
