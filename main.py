@@ -25,17 +25,16 @@ def main(cfg: DictConfig):
     main_map = hydra.utils.instantiate(cfg.mapping)
     start = time.time()
     n_segments = 0
+
     for obs in tqdm(dataloader):
-        for key, value in obs.items():
-            obs[key] = obs[key][0].numpy()
+        segments = perception_pipeline(obs["rgb"], obs["depth"], obs["intrinsics"])
 
-        output = perception_pipeline(obs["rgb"], obs["depth"], obs["intrinsics"])
-
-        local_map = ObjectMap.from_perception(output["rgb_crops"], output["mask_crops"], output["features"],
-                                              output["scores"], output["pcd_points"], output["pcd_rgb"],
-                                              camera_pose=obs["camera_pose"], device=cfg.mapping.device)
-        main_map += local_map
+        local_map = hydra.utils.instantiate(cfg.mapping)
+        local_map.from_perception(**segments, camera_pose=obs["camera_pose"])
         n_segments += len(local_map)
+
+        main_map += local_map
+
     stop = time.time()
 
     log.info("Detected segments: %d" % n_segments)

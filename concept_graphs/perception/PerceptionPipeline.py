@@ -25,11 +25,11 @@ class PerceptionPipeline:
         pcd_points, pcd_rgb = rgbd_to_object_pcd(rgb, depth, masks, intrinsics, depth_trunc=self.depth_trunc)
 
         return dict(
-            bbox=bbox,
-            scores=scores,
             rgb_crops=rgb_crops,
             mask_crops=mask_crops,
             features=features,
             pcd_points=pcd_points,
             pcd_rgb=pcd_rgb,
+            scores=scores,
         )
+

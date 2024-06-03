@@ -30,22 +30,19 @@ class ObjectMap:
         self.objects[self.current_id] = obj
         self.current_id += 1
 
-    def from_perception(rgb_crops: List[np.ndarray], mask_crops: List[np.ndarray], features: np.ndarray,
+    def from_perception(self, rgb_crops: List[np.ndarray], mask_crops: List[np.ndarray], features: np.ndarray,
                         scores: np.ndarray, pcd_points: List[np.ndarray], pcd_rgb: List[np.ndarray],
-                        camera_pose: np.ndarray, device:str, **kwargs):
-        map = ObjectMap(device=device, **kwargs)
+                        camera_pose: np.ndarray):
         n_objects = len(rgb_crops)
 
         assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb)
 
         for i in range(len(rgb_crops)):
-            map.append(Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
+            self.append(Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
                               camera_pose))
 
-        map.semantic_ft = torch.from_numpy(features).to(device)
-        map.collate_geometry()
-
-        return map
+        self.semantic_ft = torch.from_numpy(features).to(self.device)
+        self.collate_geometry()
 
     def collate_geometry(self):
         centroids = list()
