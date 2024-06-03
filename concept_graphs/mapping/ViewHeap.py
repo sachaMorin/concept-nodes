@@ -14,9 +14,7 @@ class ViewHeap:
         if len(self.heap) < self.max_size:
             heapq.heappush(self.heap, view)
         else:
-            current_worst = self.heap[0].score
-            if view.score > current_worst:
-                heapq.heappushpop(self.heap, view)
+            heapq.heappushpop(self.heap, view)
 
     def extend(self, other: "ViewHeap"):
         for view in other:
