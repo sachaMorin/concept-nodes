@@ -43,6 +43,7 @@ def main(cfg: DictConfig):
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
     # Viz
+    main_map.save_object_grids(cfg.output_dir)
     main_map.draw_geometries(random_colors=True)
 
     # query = ["a portrait"]

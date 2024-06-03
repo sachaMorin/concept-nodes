@@ -103,3 +103,13 @@ class ObjectMap:
         self.collate_geometry()
 
         return self
+
+    def save_object_grids(self, save_dir: str):
+        import matplotlib.pyplot as plt
+        from ..viz.segmentation import plot_grid_images
+        for i, obj in enumerate(self.objects.values()):
+            rgb_crops = [v.rgb for v in obj.views]
+            masks = [v.mask for v in obj.views]
+            plot_grid_images(rgb_crops, masks)
+            plt.savefig(f"{save_dir}/{i}.png")
+            plt.close()
