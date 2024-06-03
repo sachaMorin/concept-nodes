@@ -32,6 +32,15 @@ def bbox_area(bbox: torch.Tensor) -> torch.Tensor:
     return (bbox[:, 2] - bbox[:, 0]) * (bbox[:, 3] - bbox[:, 1])
 
 
+def safe_bbox_inflate(bbox: torch.Tensor, inflate_px: int, img_width: int, img_height: int) -> torch.Tensor:
+    bbox = bbox.clone()
+    bbox[:, 0] = torch.clamp(bbox[:, 0] - inflate_px, 0, img_width - 1)
+    bbox[:, 1] = torch.clamp(bbox[:, 1] - inflate_px, 0, img_height - 1)
+    bbox[:, 2] = torch.clamp(bbox[:, 2] + inflate_px, 0, img_width - 1)
+    bbox[:, 3] = torch.clamp(bbox[:, 3] + inflate_px, 0, img_height - 1)
+    return bbox
+
+
 def extract_rgb_crops(img: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
     crops = []
     for box in bbox:
