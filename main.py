@@ -4,9 +4,6 @@ from tqdm import tqdm
 import time
 import logging
 
-from concept_graphs.mapping.ObjectMap import ObjectMap
-
-
 # A logger for this file
 log = logging.getLogger(__name__)
 
