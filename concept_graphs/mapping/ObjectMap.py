@@ -19,6 +19,9 @@ class ObjectMap:
     def __len__(self):
         return len(self.objects)
 
+    def __iter__(self):
+        return iter(self.objects.values())
+
     @property
     def pcd(self) -> List[o3d.geometry.PointCloud]:
         return [o.pcd for o in self.objects.values()]
@@ -46,7 +49,7 @@ class ObjectMap:
 
     def collate_geometry(self):
         centroids = list()
-        for obj in self.objects.values():
+        for obj in self:
             centroids.append(obj.centroid)
 
         self.centroids = torch.from_numpy(np.stack(centroids, axis=0)).to(self.device)
@@ -93,7 +96,7 @@ class ObjectMap:
         merge = (sim > self.semantic_sim_thresh).any(dim=1)
         match = sim.argmax(dim=1).cpu().tolist()
 
-        for i, obj in enumerate(other.objects.values()):
+        for i, obj in enumerate(other):
             if merge[i]:
                 self.objects[match[i]] += obj
             else:
@@ -107,7 +110,7 @@ class ObjectMap:
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
         from ..viz.segmentation import plot_grid_images
-        for i, obj in enumerate(self.objects.values()):
+        for i, obj in enumerate(self):
             rgb_crops = [v.rgb for v in obj.views]
             masks = [v.mask for v in obj.views]
             plot_grid_images(rgb_crops, masks)

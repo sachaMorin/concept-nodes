@@ -26,19 +26,19 @@ def main(cfg: DictConfig):
     start = time.time()
     n_segments = 0
     for obs in tqdm(dataloader):
-        rgb, depth = obs["rgb"][0].numpy(), obs["depth"][0].numpy()
-        intrinsics, camera_pose = obs["intrinsics"][0].numpy(), obs["camera_pose"][0].numpy()
+        for key, value in obs.items():
+            obs[key] = obs[key][0].numpy()
 
-        output = perception_pipeline(rgb, depth, intrinsics)
+        output = perception_pipeline(obs["rgb"], obs["depth"], obs["intrinsics"])
 
         local_map = ObjectMap.from_perception(output["rgb_crops"], output["mask_crops"], output["features"],
                                               output["scores"], output["pcd_points"], output["pcd_rgb"],
-                                              camera_pose=camera_pose, device=cfg.mapping.device)
+                                              camera_pose=obs["camera_pose"], device=cfg.mapping.device)
         main_map += local_map
         n_segments += len(local_map)
     stop = time.time()
 
-    log.info("Mapped segments: %d" % n_segments)
+    log.info("Detected segments: %d" % n_segments)
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
