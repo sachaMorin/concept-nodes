@@ -16,11 +16,12 @@ from .utils import get_grid_coords, bbox_area
 
 
 class GridMobileSAM(SegmentationModel):
-    def __init__(self, grid_width: int, grid_height: int, model_type: str, checkpoint_path: str,
+    def __init__(self, grid_width: int, grid_height: int, grid_jitter : bool, model_type: str, checkpoint_path: str,
                  nms_iou_threshold: float, device: str, min_mask_area_px: int):
         """Mobile-SAM model with grid-based prompting."""
         self.grid_width = grid_width
         self.grid_height = grid_height
+        self.grid_jitter = grid_jitter
         self.model_type = model_type
         self.checkpoint_path = checkpoint_path
         self.device = device
@@ -34,7 +35,8 @@ class GridMobileSAM(SegmentationModel):
         self.predictor = SamPredictor(mobile_sam)
         inference_image_size = mobile_sam.image_encoder.img_size
         self.grid_coords = get_grid_coords(grid_width, grid_height, inference_image_size,
-                                           inference_image_size, self.device).unsqueeze(1)
+                                           inference_image_size, self.device, jitter=self.grid_jitter,
+                                           uniform_jitter=True).unsqueeze(1)
         self.labels = torch.ones(grid_width * grid_height, 1).to(self.device)
 
     def __call__(self, img: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:

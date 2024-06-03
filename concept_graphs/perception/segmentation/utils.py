@@ -4,12 +4,27 @@ import torch
 
 
 def get_grid_coords(grid_width: int, grid_height: int, image_width: int, image_height: int,
-                    device: str) -> torch.Tensor:
-    x = torch.linspace(0, 1, grid_width + 1, device=device)[1:] * image_height
-    y = torch.linspace(0, 1, grid_height + 1, device=device)[1:] * image_width
+                    device: str, jitter: bool = False, uniform_jitter: bool = True) -> torch.Tensor:
+    y = torch.linspace(0, 1, grid_height + 2, device=device)[1:-1] * image_height
+    x = torch.linspace(0, 1, grid_width + 2, device=device)[1:-1] * image_width
     x = x.int()
     y = y.int()
     grid = torch.stack(torch.meshgrid(x, y, indexing="ij"), dim=-1).reshape((-1, 2))
+
+    if jitter:
+        step_x = image_width // grid_width
+        step_y = image_height // grid_height
+
+        if uniform_jitter:
+            noise_x = torch.randint(-step_x // 2, step_x // 2, (1,), device=device).repeat(grid.shape[0])
+            noise_y = torch.randint(-step_y // 2, step_y // 2, (1,), device=device).repeat(grid.shape[0])
+        else:
+            noise_x = torch.randint(-step_x // 2, step_x // 2, (grid.shape[0],), device=device)
+            noise_y = torch.randint(-step_y // 2, step_y // 2, (grid.shape[0],), device=device)
+
+        grid[:, 0] += noise_x
+        grid[:, 1] += noise_y
+
     return grid
 
 

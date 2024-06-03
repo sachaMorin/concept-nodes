@@ -1,6 +1,7 @@
 _target_: concept_graphs.perception.segmentation.GridMobileSAM.GridMobileSAM
-grid_width: 4
-grid_height: 4
+grid_width: 5
+grid_height: 5
+grid_jitter: true
 model_type: "vit_t"
 checkpoint_path: ${cache_dir}/mobile_sam.pt
 device: cuda
