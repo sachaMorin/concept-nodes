@@ -39,6 +39,8 @@ def main(cfg: DictConfig):
         progress_bar.update(1)
         progress_bar.set_postfix(objects = len(main_map), segments = n_segments)
 
+    main_map.filter_min_segments()
+
     stop = time.time()
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")

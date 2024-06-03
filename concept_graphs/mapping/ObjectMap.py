@@ -7,7 +7,7 @@ import open3d as o3d
 
 class ObjectMap:
 
-    def __init__(self, max_centroid_dist: float = 0.5, semantic_sim_thresh: float = 0.5, device: str = "cpu"):
+    def __init__(self, max_centroid_dist: float, semantic_sim_thresh: float, min_segments: int, device: str = "cpu"):
         self.current_id = 0
         self.objects: Dict[int, Object] = dict()
         self.semantic_ft: torch.Tensor = None
@@ -15,6 +15,7 @@ class ObjectMap:
         self.max_centroid_dist = max_centroid_dist
         self.semantic_sim_thresh = semantic_sim_thresh
         self.device = device
+        self.min_segments = min_segments
 
     def __len__(self):
         return len(self.objects)
@@ -104,6 +105,11 @@ class ObjectMap:
         self.collate_geometry()
 
         return self
+
+    def filter_min_segments(self):
+        self.objects = {k: v for k, v in self.objects.items() if v.n_detections >= self.min_segments}
+        self.collate_semantic_ft()
+        self.collate_geometry()
 
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
