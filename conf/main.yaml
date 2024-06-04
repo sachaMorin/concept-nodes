@@ -18,3 +18,13 @@ dataloader:
   pin_memory: false
   collate_fn:
     _target_: rgbd_dataset.rgbd_dataset.dataloader.collate_fn_np_single_cb
+
+dataset:
+  base_path: /home/sacha/Downloads/Replica
+  sequence_stride: 5
+  resized_width: 600
+  resized_height: 340
+
+perception:
+  crop_bg_color: 255
+
