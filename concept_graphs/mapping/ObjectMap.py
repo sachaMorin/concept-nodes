@@ -190,12 +190,16 @@ class ObjectMap:
         self.objects = {k: v for k, v in self.objects.items() if v.n_detections >= self.min_segments}
         self.collate()
 
+    def denoise_pcd(self):
+        for obj in self:
+            obj.denoise_pcd()
+
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
         from ..viz.segmentation import plot_grid_images
         for i, obj in enumerate(self):
-            rgb_crops = [v.rgb for v in obj.views]
-            masks = [v.mask for v in obj.views]
+            rgb_crops = [v.rgb for v in obj.segments]
+            masks = [v.mask for v in obj.segments]
             plot_grid_images(rgb_crops, None, grid_width=3)
             plt.savefig(f"{save_dir}/{i}.png")
             plt.close()

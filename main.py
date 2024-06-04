@@ -40,6 +40,7 @@ def main(cfg: DictConfig):
         progress_bar.set_postfix(objects = len(main_map), segments = n_segments)
 
     main_map.filter_min_segments()
+    main_map.denoise_pcd()
     main_map.self_merge()
 
     stop = time.time()

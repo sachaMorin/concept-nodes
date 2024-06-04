@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class View:
+class Segment:
     def __init__(self, rgb: np.ndarray, mask: np.ndarray, semantic_ft: np.ndarray, score: float, camera_pose: np.ndarray):
         self.rgb = rgb
         self.mask = mask
