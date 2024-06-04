@@ -11,15 +11,22 @@ class ObjectMap:
 
     def __init__(self, max_centroid_dist: float, semantic_sim_thresh: float,
                  min_segments: int, denoising_callback: Union[PointCloudCallback, None] = None,
-                 downsampling_callback: Union[PointCloudCallback, None] = None, device: str = "cpu"):
+                 downsampling_callback: Union[PointCloudCallback, None] = None, self_merge_every : int = -1,
+                 filter_min_every: int = -1, denoise_pcd_every: int =-1, downsample_pcd_every: int = -1,
+                 device: str = "cpu"):
         self.max_centroid_dist = max_centroid_dist
         self.semantic_sim_thresh = semantic_sim_thresh
         self.min_segments = min_segments
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
+        self.self_merge_every = self_merge_every
+        self.filter_min_every = filter_min_every
+        self.denoise_pcd_every = denoise_pcd_every
+        self.downsample_pcd_every = downsample_pcd_every
         self.device = device
 
         self.current_id = 0
+        self.n_updates = 0
         self.objects: Dict[int, Object] = dict()
         self.semantic_ft: torch.Tensor = None
         self.centroids: torch.Tensor = None
@@ -128,6 +135,9 @@ class ObjectMap:
 
         self.collate()
 
+        self.n_updates += 1
+        self.check_processing()
+
         return self
 
     def self_merge(self):
@@ -166,6 +176,16 @@ class ObjectMap:
         if self.downsampling_callback is not None:
             for obj in self:
                 obj.apply_pcd_callback(self.downsampling_callback)
+
+    def check_processing(self):
+        if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
+            self.filter_min_segments()
+        if self.downsample_pcd_every > 0 and self.n_updates % self.downsample_pcd_every == 0:
+            self.downsample_pcd()
+        if self.denoise_pcd_every > 0 and self.n_updates % self.denoise_pcd_every == 0:
+            self.denoise_pcd()
+        if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
+            self.self_merge()
 
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt

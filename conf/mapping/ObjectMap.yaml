@@ -6,4 +6,10 @@ _target_: concept_graphs.mapping.ObjectMap.ObjectMap
 max_centroid_dist: .3
 semantic_sim_thresh: .7
 min_segments: 4
+
+self_merge_every: 5
+filter_min_every: -1
+denoise_pcd_every: 5
+downsample_pcd_every: 5
+
 device: cuda
