@@ -164,7 +164,7 @@ class ObjectMap:
         self.collate()
 
     def filter_min_segments(self):
-        self.objects = {k: v for k, v in self.objects.items() if v.n_detections >= self.min_segments}
+        self.objects = {k: v for k, v in self.objects.items() if v.n_segments >= self.min_segments}
         self.collate()
 
     def denoise_pcd(self):

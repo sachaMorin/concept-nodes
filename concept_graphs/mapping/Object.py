@@ -10,7 +10,7 @@ class Object:
         """Initialize with first segment."""
         self.segments = SegmentHeap()
         self.segments.push(segment)
-        self.n_detections = 1
+        self.n_segments = 1
         self.pcd = o3d.geometry.PointCloud()
         self.pcd.points = o3d.utility.Vector3dVector(pcd_points)
         self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.)
@@ -38,7 +38,7 @@ class Object:
 
     def __iadd__(self, other):
         self.segments.extend(other.segments)
-        self.n_detections += other.n_detections
+        self.n_segments += other.n_segments
         self.pcd += other.pcd
         self.update_centroid()
         self.update_semantic_ft()

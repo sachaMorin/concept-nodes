@@ -1,0 +1,3 @@
+_target_: concept_graphs.mapping.pcd_callbacks.callbacks.DBSCAN
+eps: .1
+min_points: 10
