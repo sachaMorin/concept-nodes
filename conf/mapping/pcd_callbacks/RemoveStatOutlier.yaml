@@ -1,0 +1,3 @@
+_target_: concept_graphs.mapping.pcd_callbacks.callbacks.RemoveStatOutlier
+n_neighbors: 20
+std_ratio: 2.

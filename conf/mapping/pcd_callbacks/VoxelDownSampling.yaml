@@ -1,0 +1,2 @@
+_target_: concept_graphs.mapping.pcd_callbacks.callbacks.VoxelDownSampling
+voxel_size: 0.02

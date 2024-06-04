@@ -1,22 +1,31 @@
-from typing import List, Dict
+from typing import List, Dict, Union
 import numpy as np
 import torch
-from .Object import Object
 import open3d as o3d
+from .Segment import Segment
+from .Object import Object
+from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 
 
 class ObjectMap:
 
-    def __init__(self, max_centroid_dist: float, semantic_sim_thresh: float, min_segments: int, device: str = "cpu"):
+    def __init__(self, max_centroid_dist: float, semantic_sim_thresh: float,
+                 min_segments: int, denoising_callback: Union[PointCloudCallback, None] = None,
+                 downsampling_callback: Union[PointCloudCallback, None] = None, device: str = "cpu"):
+        self.max_centroid_dist = max_centroid_dist
+        self.semantic_sim_thresh = semantic_sim_thresh
+        self.min_segments = min_segments
+        self.denoising_callback = denoising_callback
+        self.downsampling_callback = downsampling_callback
+        self.device = device
+
         self.current_id = 0
         self.objects: Dict[int, Object] = dict()
         self.semantic_ft: torch.Tensor = None
         self.centroids: torch.Tensor = None
-        self.max_centroid_dist = max_centroid_dist
-        self.semantic_sim_thresh = semantic_sim_thresh
-        self.device = device
-        self.min_segments = min_segments
-        self.key_map = []  # Map from index in collated arrays(e.g., semantic_ft, centroids) to object key in self.objects
+
+        # Map from index in collated arrays(e.g., semantic_ft, centroids) to object key in self.objects
+        self.key_map = []
 
     def __len__(self):
         return len(self.objects)
@@ -30,8 +39,20 @@ class ObjectMap:
     def __setitem__(self, key, value):
         self.objects[self.key_map[key]] = value
 
-    def pop(self, key):
+    def append(self, obj: Object) -> None:
+        self.objects[self.current_id] = obj
+        self.current_id += 1
+        self.key_map.append(self.current_id)
+
+    def pop(self, key) -> Object:
         return self.objects.pop(self.key_map[key])
+
+    def concat(self, other: 'ObjectMap') -> None:
+        """Merge maps without merging objects."""
+        for obj in other.objects.values():
+            self.append(obj)
+        self.collate_geometry()
+        self.collate_semantic_ft()
 
     def collate_geometry(self):
         if len(self):
@@ -60,40 +81,6 @@ class ObjectMap:
         self.collate_semantic_ft()
         self.collate_keys()
 
-    @property
-    def pcd_o3d(self) -> List[o3d.geometry.PointCloud]:
-        return [o.pcd for o in self]
-
-    @property
-    def oriented_bbox_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
-        bbox = [o.pcd.get_oriented_bounding_box() for o in self]
-
-        # Change color to black
-        for b in bbox:
-            b.color = (0, 0, 0)
-
-        return bbox
-
-
-    @property
-    def centroids_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
-        if len(self):
-            centroids = []
-            centroids_np = self.centroids.cpu().numpy()
-            for c in centroids_np:
-                centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
-                centroid.translate(c)
-                centroids.append(centroid)
-        else:
-            centroids = []
-
-        return centroids
-
-    def append(self, obj: Object):
-        self.objects[self.current_id] = obj
-        self.current_id += 1
-        self.key_map.append(self.current_id)
-
     def from_perception(self, rgb_crops: List[np.ndarray], mask_crops: List[np.ndarray], features: np.ndarray,
                         scores: np.ndarray, pcd_points: List[np.ndarray], pcd_rgb: List[np.ndarray],
                         camera_pose: np.ndarray, is_bg: np.ndarray):
@@ -101,36 +88,16 @@ class ObjectMap:
         assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb) == len(
             is_bg)
 
-        if not is_bg.all():
-            for i in range(len(rgb_crops)):
-                if not is_bg[i]:
-                    self.append(
-                        Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
-                               camera_pose))
+        for i in range(len(rgb_crops)):
+            if not is_bg[i]:
+                segment = Segment(rgb=rgb_crops[i], mask=mask_crops[i], semantic_ft=features[i], score=float(scores[i]),
+                                  camera_pose=camera_pose)
+                object = Object(segment=segment, pcd_points=pcd_points[i], pcd_rgb=pcd_rgb[i])
+                self.append(object)
 
-            self.semantic_ft = torch.from_numpy(features[~is_bg]).to(self.device)
-            self.collate_geometry()
-            self.collate_keys()
-
-    def draw_geometries(self, random_colors: bool = False) -> None:
-        pcd = self.pcd_o3d
-        centroids = self.centroids_o3d
-        bbox = self.oriented_bbox_o3d
-
-        if random_colors:
-            for p, c in zip(pcd, centroids):
-                color = np.random.rand(3)
-                p.paint_uniform_color(color)
-                c.paint_uniform_color(color)
-
-        o3d.visualization.draw_geometries(pcd + centroids + bbox)
-
-    def concat(self, other: 'ObjectMap') -> None:
-        """Merge maps without merging objects."""
-        for obj in other.objects.values():
-            self.append(obj)
+        self.semantic_ft = torch.from_numpy(features[~is_bg]).to(self.device)
         self.collate_geometry()
-        self.collate_semantic_ft()
+        self.collate_keys()
 
     def similarity(self, other: 'ObjectMap') -> torch.Tensor:
         """Compute similarities with objects from another map."""
@@ -191,8 +158,14 @@ class ObjectMap:
         self.collate()
 
     def denoise_pcd(self):
-        for obj in self:
-            obj.denoise_pcd()
+        if self.denoising_callback is not None:
+            for obj in self:
+                obj.apply_pcd_callback(self.denoising_callback)
+
+    def downsample_pcd(self):
+        if self.downsampling_callback is not None:
+            for obj in self:
+                obj.apply_pcd_callback(self.downsampling_callback)
 
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
@@ -203,3 +176,44 @@ class ObjectMap:
             plot_grid_images(rgb_crops, None, grid_width=3)
             plt.savefig(f"{save_dir}/{i}.png")
             plt.close()
+
+    @property
+    def pcd_o3d(self) -> List[o3d.geometry.PointCloud]:
+        return [o.pcd for o in self]
+
+    @property
+    def oriented_bbox_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
+        bbox = [o.pcd.get_oriented_bounding_box() for o in self]
+
+        # Change color to black
+        for b in bbox:
+            b.color = (0, 0, 0)
+
+        return bbox
+
+    @property
+    def centroids_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
+        if len(self):
+            centroids = []
+            centroids_np = self.centroids.cpu().numpy()
+            for c in centroids_np:
+                centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
+                centroid.translate(c)
+                centroids.append(centroid)
+        else:
+            centroids = []
+
+        return centroids
+
+    def draw_geometries(self, random_colors: bool = False) -> None:
+        pcd = self.pcd_o3d
+        centroids = self.centroids_o3d
+        bbox = self.oriented_bbox_o3d
+
+        if random_colors:
+            for p, c in zip(pcd, centroids):
+                color = np.random.rand(3)
+                p.paint_uniform_color(color)
+                c.paint_uniform_color(color)
+
+        o3d.visualization.draw_geometries(pcd + centroids + bbox)
