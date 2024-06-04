@@ -16,7 +16,7 @@ class Object:
         self.pcd.points = o3d.utility.Vector3dVector(pcd_points)
         self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.)
         self.pcd.transform(camera_pose)
-        self.centroid = np.mean(pcd_points, axis=0)
+        self.centroid = np.mean(self.pcd.points, axis=0)
         self.semantic_ft = semantic_ft
 
     def update_semantic_ft(self):
@@ -34,7 +34,7 @@ class Object:
         self.pcd += other.pcd
         if len(self.pcd.points) > 1000:
             self.pcd = self.pcd.uniform_down_sample(every_k_points=2)
-        self.centroid = .9 * self.centroid + .1 * other.centroid
+        self.centroid = np.mean(self.pcd.points, axis=0)
         self.update_semantic_ft()
 
         return self
