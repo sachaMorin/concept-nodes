@@ -170,12 +170,16 @@ class ObjectMap:
     def denoise_pcd(self):
         if self.denoising_callback is not None:
             for obj in self:
-                obj.apply_pcd_callback(self.denoising_callback)
+                if not obj.is_denoised:
+                    obj.apply_pcd_callback(self.denoising_callback)
+                    obj.is_denoised = True
 
     def downsample_pcd(self):
         if self.downsampling_callback is not None:
             for obj in self:
-                obj.apply_pcd_callback(self.downsampling_callback)
+                if not obj.is_downsampled:
+                    obj.apply_pcd_callback(self.downsampling_callback)
+                    obj.is_downsampled = True
 
     def check_processing(self):
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:

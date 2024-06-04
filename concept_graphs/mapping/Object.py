@@ -20,6 +20,9 @@ class Object:
         self.update_centroid()
         self.semantic_ft = segment.semantic_ft
 
+        self.is_denoised = False
+        self.is_downsampled = False
+
     def update_centroid(self):
         self.centroid = np.mean(self.pcd.points, axis=0)
 
@@ -42,5 +45,8 @@ class Object:
         self.pcd += other.pcd
         self.update_centroid()
         self.update_semantic_ft()
+
+        self.is_denoised = False
+        self.is_downsampled = False
 
         return self
