@@ -16,12 +16,43 @@ class ObjectMap:
         self.semantic_sim_thresh = semantic_sim_thresh
         self.device = device
         self.min_segments = min_segments
+        self.key_map = []  # Map from index in collated arrays(e.g., semantic_ft, centroids) to object key in self.objects
 
     def __len__(self):
         return len(self.objects)
 
     def __iter__(self):
         return iter(self.objects.values())
+
+    def __getitem__(self, item):
+        return self.objects[self.key_map[item]]
+
+    def __setitem__(self, key, value):
+        self.objects[self.key_map[key]] = value
+
+    def pop(self, key):
+        return self.objects.pop(self.key_map[key])
+
+    def collate_geometry(self):
+        centroids = list()
+        for obj in self:
+            centroids.append(obj.centroid)
+
+        self.centroids = torch.from_numpy(np.stack(centroids, axis=0)).to(self.device)
+
+    def collate_semantic_ft(self):
+        ft = list()
+        for obj in self.objects.values():
+            ft.append(obj.semantic_ft)
+        self.semantic_ft = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
+
+    def collate_keys(self):
+        self.key_map = list(self.objects.keys())
+
+    def collate(self):
+        self.collate_geometry()
+        self.collate_semantic_ft()
+        self.collate_keys()
 
     @property
     def pcd(self) -> List[o3d.geometry.PointCloud]:
@@ -30,6 +61,7 @@ class ObjectMap:
     def append(self, obj: Object):
         self.objects[self.current_id] = obj
         self.current_id += 1
+        self.key_map.append(self.current_id)
 
     def from_perception(self, rgb_crops: List[np.ndarray], mask_crops: List[np.ndarray], features: np.ndarray,
                         scores: np.ndarray, pcd_points: List[np.ndarray], pcd_rgb: List[np.ndarray],
@@ -45,22 +77,11 @@ class ObjectMap:
 
             self.semantic_ft = torch.from_numpy(features[~is_bg]).to(self.device)
             self.collate_geometry()
+            self.collate_keys()
 
-    def collate_geometry(self):
-        centroids = list()
-        for obj in self:
-            centroids.append(obj.centroid)
-
-        self.centroids = torch.from_numpy(np.stack(centroids, axis=0)).to(self.device)
-
-    def collate_semantic_ft(self):
-        ft = list()
-        for obj in self.objects.values():
-            ft.append(obj.semantic_ft)
-        self.semantic_ft = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
 
     def draw_geometries(self, random_colors: bool = False) -> None:
-        pcd = self.pcd
+        pcd = self.pcd_o3d
         if random_colors:
             for p in pcd:
                 p.paint_uniform_color(np.random.rand(3))
@@ -97,19 +118,38 @@ class ObjectMap:
 
         for i, obj in enumerate(other):
             if merge[i]:
-                self.objects[match[i]] += obj
+                self[match[i]] += obj
             else:
                 self.append(obj)
 
-        self.collate_semantic_ft()
-        self.collate_geometry()
+        self.collate()
 
         return self
 
+    def self_merge(self):
+        sim = self.similarity(self).t()
+        sim.fill_diagonal_(-1) # Avoid self merge attempts
+        merge = (sim > self.semantic_sim_thresh).any(dim=1)
+        match = sim.argmax(dim=1).cpu().tolist()
+        to_delete = list()
+
+        for i, obj in enumerate(self):
+            if i not in to_delete and merge[i]:
+                j = match[i]
+                self[i] += self[j]
+                self[j] = self[i] # Reference to i
+                if j not in to_delete:
+                    to_delete.append(j)
+
+        import pdb; pdb.set_trace()
+        for i in to_delete:
+            self.pop(i)
+
+        self.collate()
+
     def filter_min_segments(self):
         self.objects = {k: v for k, v in self.objects.items() if v.n_detections >= self.min_segments}
-        self.collate_semantic_ft()
-        self.collate_geometry()
+        self.collate()
 
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
