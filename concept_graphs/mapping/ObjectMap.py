@@ -34,17 +34,23 @@ class ObjectMap:
         return self.objects.pop(self.key_map[key])
 
     def collate_geometry(self):
-        centroids = list()
-        for obj in self:
-            centroids.append(obj.centroid)
+        if len(self):
+            centroids = list()
+            for obj in self:
+                centroids.append(obj.centroid)
 
-        self.centroids = torch.from_numpy(np.stack(centroids, axis=0)).to(self.device)
+            self.centroids = torch.from_numpy(np.stack(centroids, axis=0)).to(self.device)
+        else:
+            self.centroids = None
 
     def collate_semantic_ft(self):
-        ft = list()
-        for obj in self.objects.values():
-            ft.append(obj.semantic_ft)
-        self.semantic_ft = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
+        if len(self):
+            ft = list()
+            for obj in self.objects.values():
+                ft.append(obj.semantic_ft)
+            self.semantic_ft = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
+        else:
+            self.semantic_ft = None
 
     def collate_keys(self):
         self.key_map = list(self.objects.keys())
@@ -55,8 +61,33 @@ class ObjectMap:
         self.collate_keys()
 
     @property
-    def pcd(self) -> List[o3d.geometry.PointCloud]:
-        return [o.pcd for o in self.objects.values()]
+    def pcd_o3d(self) -> List[o3d.geometry.PointCloud]:
+        return [o.pcd for o in self]
+
+    @property
+    def oriented_bbox_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
+        bbox = [o.pcd.get_oriented_bounding_box() for o in self]
+
+        # Change color to black
+        for b in bbox:
+            b.color = (0, 0, 0)
+
+        return bbox
+
+
+    @property
+    def centroids_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
+        if len(self):
+            centroids = []
+            centroids_np = self.centroids.cpu().numpy()
+            for c in centroids_np:
+                centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
+                centroid.translate(c)
+                centroids.append(centroid)
+        else:
+            centroids = []
+
+        return centroids
 
     def append(self, obj: Object):
         self.objects[self.current_id] = obj
@@ -67,26 +98,32 @@ class ObjectMap:
                         scores: np.ndarray, pcd_points: List[np.ndarray], pcd_rgb: List[np.ndarray],
                         camera_pose: np.ndarray, is_bg: np.ndarray):
         n_objects = len(rgb_crops)
-        assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb) == len(is_bg)
+        assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb) == len(
+            is_bg)
 
         if not is_bg.all():
             for i in range(len(rgb_crops)):
                 if not is_bg[i]:
-                    self.append(Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
-                                    camera_pose))
+                    self.append(
+                        Object(rgb_crops[i], mask_crops[i], features[i], float(scores[i]), pcd_points[i], pcd_rgb[i],
+                               camera_pose))
 
             self.semantic_ft = torch.from_numpy(features[~is_bg]).to(self.device)
             self.collate_geometry()
             self.collate_keys()
 
-
     def draw_geometries(self, random_colors: bool = False) -> None:
         pcd = self.pcd_o3d
-        if random_colors:
-            for p in pcd:
-                p.paint_uniform_color(np.random.rand(3))
+        centroids = self.centroids_o3d
+        bbox = self.oriented_bbox_o3d
 
-        o3d.visualization.draw_geometries(pcd)
+        if random_colors:
+            for p, c in zip(pcd, centroids):
+                color = np.random.rand(3)
+                p.paint_uniform_color(color)
+                c.paint_uniform_color(color)
+
+        o3d.visualization.draw_geometries(pcd + centroids + bbox)
 
     def concat(self, other: 'ObjectMap') -> None:
         """Merge maps without merging objects."""
@@ -127,8 +164,11 @@ class ObjectMap:
         return self
 
     def self_merge(self):
+        if len(self) == 0:
+            return self
+
         sim = self.similarity(self).t()
-        sim.fill_diagonal_(-1) # Avoid self merge attempts
+        sim.fill_diagonal_(-1)  # Avoid self merge attempts
         merge = (sim > self.semantic_sim_thresh).any(dim=1)
         match = sim.argmax(dim=1).cpu().tolist()
         to_delete = list()
@@ -137,11 +177,10 @@ class ObjectMap:
             if i not in to_delete and merge[i]:
                 j = match[i]
                 self[i] += self[j]
-                self[j] = self[i] # Reference to i
+                self[j] = self[i]  # Reference to i
                 if j not in to_delete:
                     to_delete.append(j)
 
-        import pdb; pdb.set_trace()
         for i in to_delete:
             self.pop(i)
 
