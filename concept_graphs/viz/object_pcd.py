@@ -5,7 +5,10 @@ import matplotlib.cm as cm
 from .utils import similarities_to_rgb
 
 
-def visualize_object_pcd(pcd_points: List[np.ndarray], pcd_rgb: List[Union[np.ndarray, Tuple[int, int, int]]] = None):
+def visualize_object_pcd(
+    pcd_points: List[np.ndarray],
+    pcd_rgb: List[Union[np.ndarray, Tuple[int, int, int]]] = None,
+):
     geometries = []
     for i, pcd in enumerate(pcd_points):
         pcd_o3d = o3d.geometry.PointCloud()
@@ -21,13 +24,17 @@ def visualize_object_pcd(pcd_points: List[np.ndarray], pcd_rgb: List[Union[np.nd
                 raise ValueError()
         else:
             # Sample random color for whole object
-            pcd_o3d.paint_uniform_color([np.random.rand(), np.random.rand(), np.random.rand()])
+            pcd_o3d.paint_uniform_color(
+                [np.random.rand(), np.random.rand(), np.random.rand()]
+            )
 
         geometries.append(pcd_o3d)
 
     o3d.visualization.draw_geometries(geometries)
 
 
-def visualize_object_pcd_similarities(pcd_points: List[np.ndarray], similarities: np.ndarray):
+def visualize_object_pcd_similarities(
+    pcd_points: List[np.ndarray], similarities: np.ndarray
+):
     rgb_sim = similarities_to_rgb(similarities, "viridis")
     visualize_object_pcd(pcd_points, rgb_sim)

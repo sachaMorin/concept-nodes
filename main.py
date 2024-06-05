@@ -18,7 +18,9 @@ def main(cfg: DictConfig):
 
     segmentation_model = hydra.utils.instantiate(cfg.segmentation)
     ft_extractor = hydra.utils.instantiate(cfg.ft_extraction)
-    perception_pipeline = hydra.utils.instantiate(cfg.perception, segmentation_model=segmentation_model, ft_extractor=ft_extractor)
+    perception_pipeline = hydra.utils.instantiate(
+        cfg.perception, segmentation_model=segmentation_model, ft_extractor=ft_extractor
+    )
 
     log.info("Mapping...")
     progress_bar = tqdm(total=len(dataset))
@@ -37,7 +39,7 @@ def main(cfg: DictConfig):
 
         main_map += local_map
         progress_bar.update(1)
-        progress_bar.set_postfix(objects = len(main_map), segments = n_segments)
+        progress_bar.set_postfix(objects=len(main_map), segments=n_segments)
 
     main_map.filter_min_segments()
     main_map.downsample_pcd()
@@ -59,6 +61,7 @@ def main(cfg: DictConfig):
     # from concept_graphs.viz.object_pcd import visualize_object_pcd_similarities, visualize_object_pcd
     # visualize_object_pcd(output["pcd_points"])
     # visualize_object_pcd_similarities(output["pcd_points"], similarities)
+
 
 if __name__ == "__main__":
     main()

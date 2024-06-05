@@ -22,7 +22,7 @@ class RemoveRadiusOutlier(PointCloudCallback):
         if len(pcd.points) < self.n_points:
             return pcd
 
-        pcd, _ =  pcd.remove_radius_outlier(nb_points=self.n_points, radius=self.radius)
+        pcd, _ = pcd.remove_radius_outlier(nb_points=self.n_points, radius=self.radius)
         return pcd
 
 

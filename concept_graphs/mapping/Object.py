@@ -6,8 +6,14 @@ from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 
 
 class Object:
-    def __init__(self, segment: Segment, pcd_points: np.ndarray, pcd_rgb: np.ndarray,
-                 segment_heap_size: int, geometry_mode: str):
+    def __init__(
+        self,
+        segment: Segment,
+        pcd_points: np.ndarray,
+        pcd_rgb: np.ndarray,
+        segment_heap_size: int,
+        geometry_mode: str,
+    ):
         """Initialize with first segment."""
         self.geometry_mode = geometry_mode
         self.segments = SegmentHeap(max_size=segment_heap_size)
@@ -15,7 +21,7 @@ class Object:
         self.n_segments = 1
         self.pcd = o3d.geometry.PointCloud()
         self.pcd.points = o3d.utility.Vector3dVector(pcd_points)
-        self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.)
+        self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.0)
         self.pcd.transform(segment.camera_pose)
 
         self.geometry = None
@@ -42,7 +48,7 @@ class Object:
 
         mean = np.mean(ft, axis=0)
 
-        self.semantic_ft =  mean/np.linalg.norm(mean, 2)
+        self.semantic_ft = mean / np.linalg.norm(mean, 2)
 
     def apply_pcd_callback(self, callback: PointCloudCallback):
         self.pcd = callback(self.pcd)
@@ -59,6 +65,7 @@ class Object:
         self.is_downsampled = False
 
         return self
+
 
 class ObjectFactory:
     def __init__(self, **kwargs):

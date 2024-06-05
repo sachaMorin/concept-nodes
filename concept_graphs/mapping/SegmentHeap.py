@@ -22,4 +22,3 @@ class SegmentHeap:
     def extend(self, other: "SegmentHeap"):
         for segment in other:
             self.push(segment)
-

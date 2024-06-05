@@ -7,6 +7,7 @@ import logging
 # A logger for this file
 log = logging.getLogger(__name__)
 
+
 def set_seed(seed: int = 42) -> None:
     # From wanb https://wandb.ai/sauravmaheshkar/RSNA-MICCAI/reports/How-to-Set-Random-Seeds-in-PyTorch-and-Tensorflow--VmlldzoxMDA2MDQy
     np.random.seed(seed)

@@ -21,20 +21,29 @@ def box_xywh_to_xyxy(box_xywh: torch.Tensor) -> torch.Tensor:
 
 
 class AutomaticMobileSAM(SegmentationModel):
-    def __init__(self, mask_generator: SamAutomaticMaskGenerator, model_type: str, checkpoint_path: str,
-                 device: str = "cuda"):
+    def __init__(
+        self,
+        mask_generator: SamAutomaticMaskGenerator,
+        model_type: str,
+        checkpoint_path: str,
+        device: str = "cuda",
+    ):
         """Mobile-SAM model with grid-based prompting."""
         self.model_type = model_type
         self.checkpoint_path = checkpoint_path
         self.device = device
 
-        mobile_sam = sam_model_registry[self.model_type](checkpoint=self.checkpoint_path)
+        mobile_sam = sam_model_registry[self.model_type](
+            checkpoint=self.checkpoint_path
+        )
         mobile_sam.to(device=self.device)
         mobile_sam.eval()
 
         self.predictor = mask_generator(model=mobile_sam)
 
-    def __call__(self, img: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __call__(
+        self, img: np.ndarray
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         anns = self.predictor.generate(img)
         masks, bbox, score = [], [], []
 
@@ -47,4 +56,3 @@ class AutomaticMobileSAM(SegmentationModel):
         bbox = box_xywh_to_xyxy(bbox)
 
         return masks, bbox, score
-

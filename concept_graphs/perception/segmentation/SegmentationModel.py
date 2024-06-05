@@ -6,7 +6,9 @@ import numpy as np
 
 class SegmentationModel:
 
-    def __call__(self, img: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __call__(
+        self, img: np.ndarray
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
 
         Parameters

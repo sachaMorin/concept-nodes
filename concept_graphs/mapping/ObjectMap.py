@@ -10,11 +10,21 @@ from .similarities.match_similarities import match_similarities
 
 class ObjectMap:
 
-    def __init__(self, geometric_sim_thresh: float, semantic_sim_thresh: float,
-                 min_segments: int, geometry_mode: str, object_factory: ObjectFactory, denoising_callback: Union[PointCloudCallback, None] = None,
-                 downsampling_callback: Union[PointCloudCallback, None] = None, self_merge_every : int = -1,
-                 filter_min_every: int = -1, denoise_pcd_every: int =-1, downsample_pcd_every: int = -1,
-                 device: str = "cpu"):
+    def __init__(
+        self,
+        geometric_sim_thresh: float,
+        semantic_sim_thresh: float,
+        min_segments: int,
+        geometry_mode: str,
+        object_factory: ObjectFactory,
+        denoising_callback: Union[PointCloudCallback, None] = None,
+        downsampling_callback: Union[PointCloudCallback, None] = None,
+        self_merge_every: int = -1,
+        filter_min_every: int = -1,
+        denoise_pcd_every: int = -1,
+        downsample_pcd_every: int = -1,
+        device: str = "cpu",
+    ):
         self.geometric_sim_thresh = geometric_sim_thresh
         self.semantic_sim_thresh = semantic_sim_thresh
         self.min_segments = min_segments
@@ -58,7 +68,7 @@ class ObjectMap:
     def pop(self, key) -> Object:
         return self.objects.pop(self.key_map[key])
 
-    def concat(self, other: 'ObjectMap') -> None:
+    def concat(self, other: "ObjectMap") -> None:
         """Merge maps without merging objects."""
         for obj in other.objects.values():
             self.append(obj)
@@ -71,7 +81,9 @@ class ObjectMap:
             for obj in self:
                 geometries.append(obj.geometry)
 
-            self.geometry_tensor = torch.from_numpy(np.stack(geometries, axis=0)).to(self.device)
+            self.geometry_tensor = torch.from_numpy(np.stack(geometries, axis=0)).to(
+                self.device
+            )
         else:
             self.geometry_tensor = None
 
@@ -80,7 +92,9 @@ class ObjectMap:
             ft = list()
             for obj in self.objects.values():
                 ft.append(obj.semantic_ft)
-            self.semantic_tensor = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
+            self.semantic_tensor = torch.from_numpy(np.stack(ft, axis=0)).to(
+                self.device
+            )
         else:
             self.semantic_tensor = None
 
@@ -92,31 +106,62 @@ class ObjectMap:
         self.collate_semantic_ft()
         self.collate_keys()
 
-    def from_perception(self, rgb_crops: List[np.ndarray], mask_crops: List[np.ndarray], features: np.ndarray,
-                        scores: np.ndarray, pcd_points: List[np.ndarray], pcd_rgb: List[np.ndarray],
-                        camera_pose: np.ndarray, is_bg: np.ndarray):
+    def from_perception(
+        self,
+        rgb_crops: List[np.ndarray],
+        mask_crops: List[np.ndarray],
+        features: np.ndarray,
+        scores: np.ndarray,
+        pcd_points: List[np.ndarray],
+        pcd_rgb: List[np.ndarray],
+        camera_pose: np.ndarray,
+        is_bg: np.ndarray,
+    ):
         n_objects = len(rgb_crops)
-        assert n_objects == len(mask_crops) == len(features) == len(scores) == len(pcd_points) == len(pcd_rgb) == len(
-            is_bg)
+        assert (
+            n_objects
+            == len(mask_crops)
+            == len(features)
+            == len(scores)
+            == len(pcd_points)
+            == len(pcd_rgb)
+            == len(is_bg)
+        )
 
         for i in range(len(rgb_crops)):
             if not is_bg[i]:
-                segment = Segment(rgb=rgb_crops[i], mask=mask_crops[i], semantic_ft=features[i], score=float(scores[i]),
-                                  camera_pose=camera_pose)
-                object = self.object_factory(segment=segment, pcd_points=pcd_points[i], pcd_rgb=pcd_rgb[i])
+                segment = Segment(
+                    rgb=rgb_crops[i],
+                    mask=mask_crops[i],
+                    semantic_ft=features[i],
+                    score=float(scores[i]),
+                    camera_pose=camera_pose,
+                )
+                object = self.object_factory(
+                    segment=segment, pcd_points=pcd_points[i], pcd_rgb=pcd_rgb[i]
+                )
                 self.append(object)
 
         self.semantic_tensor = torch.from_numpy(features[~is_bg]).to(self.device)
         self.collate_geometry()
         self.collate_keys()
 
-    def match_similarities(self, other: 'ObjectMap', mask_diagonal: bool = False) -> Tuple[List[bool], List[int]]:
+    def match_similarities(
+        self, other: "ObjectMap", mask_diagonal: bool = False
+    ) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
-        return match_similarities(self.semantic_tensor, self.geometry_tensor, other.semantic_tensor, other.geometry_tensor,
-                                  self.semantic_sim_thresh, self.geometric_sim_thresh, mask_diagonal)
+        return match_similarities(
+            main_semantic=self.semantic_tensor,
+            main_geometry=self.geometry_tensor,
+            other_semantic=other.semantic_tensor,
+            other_geometry=other.geometry_tensor,
+            semantic_sim_thresh=self.semantic_sim_thresh,
+            geometric_sim_thresh=self.geometric_sim_thresh,
+            geometry_mode=self.geometry_mode,
+            mask_diagonal=mask_diagonal,
+        )
 
-
-    def __iadd__(self, other: 'ObjectMap'):
+    def __iadd__(self, other: "ObjectMap"):
         if len(self) == 0:
             return other
         if len(other) == 0:
@@ -158,7 +203,9 @@ class ObjectMap:
         self.collate()
 
     def filter_min_segments(self):
-        self.objects = {k: v for k, v in self.objects.items() if v.n_segments >= self.min_segments}
+        self.objects = {
+            k: v for k, v in self.objects.items() if v.n_segments >= self.min_segments
+        }
         self.collate()
 
     def denoise_pcd(self):
@@ -178,7 +225,10 @@ class ObjectMap:
     def check_processing(self):
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
-        if self.downsample_pcd_every > 0 and self.n_updates % self.downsample_pcd_every == 0:
+        if (
+            self.downsample_pcd_every > 0
+            and self.n_updates % self.downsample_pcd_every == 0
+        ):
             self.downsample_pcd()
         if self.denoise_pcd_every > 0 and self.n_updates % self.denoise_pcd_every == 0:
             self.denoise_pcd()
@@ -188,6 +238,7 @@ class ObjectMap:
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
         from ..viz.segmentation import plot_grid_images
+
         for i, obj in enumerate(self):
             rgb_crops = [v.rgb for v in obj.segments]
             masks = [v.mask for v in obj.segments]

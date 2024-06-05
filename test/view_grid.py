@@ -3,7 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 black_image = np.zeros((100, 120, 3), dtype=np.uint8)
-grid = get_grid_coords(5, 5, 120, 100, "cpu", jitter=True, uniform_jitter=True).cpu().numpy()
+grid = (
+    get_grid_coords(5, 5, 120, 100, "cpu", jitter=True, uniform_jitter=True)
+    .cpu()
+    .numpy()
+)
 
 plt.imshow(black_image)
 plt.scatter(grid[:, 0], grid[:, 1], c="red", s=10, marker="+")
