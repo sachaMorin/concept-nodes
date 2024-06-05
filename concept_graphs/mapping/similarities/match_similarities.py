@@ -1,5 +1,6 @@
 from typing import Tuple, List
 import torch
+from .chamferdist import chamferdist_batch
 
 
 def match_similarities(
@@ -15,9 +16,15 @@ def match_similarities(
     semantic_sim = other_semantic @ main_semantic.t()
 
     if geometry_mode == "centroid":
-        geometric_sim = 1 / (torch.cdist(other_geometry, main_geometry) + 1e-6)
+        geometric_dissim = torch.cdist(other_geometry, main_geometry) + 1e-6
+    elif geometry_mode == "chamferdist":
+        geometric_dissim = chamferdist_batch(other_geometry, main_geometry, agg="sum")
+    elif geometry_mode == "chamferdist_min":
+        geometric_dissim = chamferdist_batch(other_geometry, main_geometry, agg="min")
     else:
         raise ValueError(f"Unknown geometry mode: {geometry_mode}")
+
+    geometric_sim = 1 / (geometric_dissim + 1e-6)
 
     if mask_diagonal:
         semantic_sim.fill_diagonal_(-1)

@@ -13,9 +13,11 @@ class Object:
         pcd_rgb: np.ndarray,
         segment_heap_size: int,
         geometry_mode: str,
+        n_sample_pcd: int = 20,
     ):
         """Initialize with first segment."""
         self.geometry_mode = geometry_mode
+        self.n_sample_pcd = n_sample_pcd
         self.segments = SegmentHeap(max_size=segment_heap_size)
         self.segments.push(segment)
         self.n_segments = 1
@@ -38,6 +40,16 @@ class Object:
     def update_geometry(self):
         if self.geometry_mode == "centroid":
             self.geometry = self.centroid
+        elif self.geometry_mode in ["chamferdist", "chamferdist_min"]:
+            points = np.asarray(self.pcd.points)
+            n_points = points.shape[0]
+
+            if n_points < self.n_sample_pcd:
+                # Sample n_sample_pcd - n_points points with replacement
+                idx = np.random.choice(n_points, self.n_sample_pcd - n_points, replace=True)
+                self.geometry = np.concatenate([points, points[idx]], axis=0)
+            else:
+                self.geometry = points[np.random.choice(n_points, self.n_sample_pcd, replace=False)]
         else:
             raise ValueError(f"Invalid geometry mode {self.geometry_mode}.")
 

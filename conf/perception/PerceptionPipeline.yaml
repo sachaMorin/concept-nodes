@@ -9,5 +9,5 @@ bg_classes:
   - ceiling
   - wall with holes
   - floor with holes
-bg_sim_thresh: 0.22
+bg_sim_thresh: 0.21
 crop_bg_color: null  # null: keep bg, 0: black, 255: white
