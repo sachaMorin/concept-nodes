@@ -13,7 +13,7 @@ class PerceptionPipeline:
         ft_extractor: FeatureExtractor,
         inflate_bbox_px: int,
         depth_trunc: float,
-        bg_classes: List[str],
+        bg_classes: Union[List[str], None],
         bg_sim_thresh: float,
         crop_bg_color: Union[int, None] = None,
     ):
@@ -27,7 +27,7 @@ class PerceptionPipeline:
         self.bg_features = None
 
         # Compute features for bg_class
-        if len(self.bg_classes):
+        if self.bg_classes is not None:
             self.bg_features = self.ft_extractor.encode_text(self.bg_classes)
             self.bg_features.to(self.ft_extractor.device)
 
