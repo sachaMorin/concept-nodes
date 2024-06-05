@@ -5,6 +5,7 @@ import open3d as o3d
 from .Segment import Segment
 from .Object import Object, ObjectFactory
 from .pcd_callbacks.PointCloudCallback import PointCloudCallback
+from .similarities.match_similarities import match_similarities
 
 
 class ObjectMap:
@@ -111,21 +112,9 @@ class ObjectMap:
 
     def match_similarities(self, other: 'ObjectMap', mask_diagonal: bool = False) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
-        semantic_sim = self.semantic_tensor @ other.semantic_tensor.t()
+        return match_similarities(self.semantic_tensor, self.geometry_tensor, other.semantic_tensor, other.geometry_tensor,
+                                  self.semantic_sim_thresh, self.geometric_sim_thresh, mask_diagonal)
 
-        geometric_sim = 1 / (torch.cdist(self.geometry_tensor, other.geometry_tensor) + 1e-6)
-        is_close = geometric_sim > self.geometric_sim_thresh
-
-        sim = torch.where(is_close, semantic_sim, -1 * torch.ones_like(semantic_sim))
-        sim = sim.t() # Put other on first axis
-
-        if mask_diagonal:
-            sim.fill_diagonal_(-1)
-
-        merge = (sim > self.semantic_sim_thresh).any(dim=1).cpu().tolist()
-        match_idx = sim.argmax(dim=1).cpu().tolist()
-
-        return merge, match_idx
 
     def __iadd__(self, other: 'ObjectMap'):
         if len(self) == 0:
