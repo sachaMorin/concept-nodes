@@ -1,22 +1,24 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 import numpy as np
 import torch
 import open3d as o3d
 from .Segment import Segment
-from .Object import Object
+from .Object import Object, ObjectFactory
 from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 
 
 class ObjectMap:
 
-    def __init__(self, max_centroid_dist: float, semantic_sim_thresh: float,
-                 min_segments: int, denoising_callback: Union[PointCloudCallback, None] = None,
+    def __init__(self, geometric_sim_thresh: float, semantic_sim_thresh: float,
+                 min_segments: int, geometry_mode: str, object_factory: ObjectFactory, denoising_callback: Union[PointCloudCallback, None] = None,
                  downsampling_callback: Union[PointCloudCallback, None] = None, self_merge_every : int = -1,
                  filter_min_every: int = -1, denoise_pcd_every: int =-1, downsample_pcd_every: int = -1,
                  device: str = "cpu"):
-        self.max_centroid_dist = max_centroid_dist
+        self.geometric_sim_thresh = geometric_sim_thresh
         self.semantic_sim_thresh = semantic_sim_thresh
         self.min_segments = min_segments
+        self.geometry_mode = geometry_mode
+        self.object_factory = object_factory
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
         self.self_merge_every = self_merge_every
@@ -28,10 +30,11 @@ class ObjectMap:
         self.current_id = 0
         self.n_updates = 0
         self.objects: Dict[int, Object] = dict()
-        self.semantic_ft: torch.Tensor = None
-        self.centroids: torch.Tensor = None
 
-        # Map from index in collated arrays(e.g., semantic_ft, centroids) to object key in self.objects
+        self.semantic_tensor: torch.Tensor = None
+        self.geometry_tensor: torch.Tensor = None
+
+        # Map from index in collated tensors (e.g., semantic_tensor, geometry_tensor) to object key in self.objects
         self.key_map = []
 
     def __len__(self):
@@ -63,22 +66,22 @@ class ObjectMap:
 
     def collate_geometry(self):
         if len(self):
-            centroids = list()
+            geometries = list()
             for obj in self:
-                centroids.append(obj.centroid)
+                geometries.append(obj.geometry)
 
-            self.centroids = torch.from_numpy(np.stack(centroids, axis=0)).to(self.device)
+            self.geometry_tensor = torch.from_numpy(np.stack(geometries, axis=0)).to(self.device)
         else:
-            self.centroids = None
+            self.geometry_tensor = None
 
     def collate_semantic_ft(self):
         if len(self):
             ft = list()
             for obj in self.objects.values():
                 ft.append(obj.semantic_ft)
-            self.semantic_ft = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
+            self.semantic_tensor = torch.from_numpy(np.stack(ft, axis=0)).to(self.device)
         else:
-            self.semantic_ft = None
+            self.semantic_tensor = None
 
     def collate_keys(self):
         self.key_map = list(self.objects.keys())
@@ -99,23 +102,30 @@ class ObjectMap:
             if not is_bg[i]:
                 segment = Segment(rgb=rgb_crops[i], mask=mask_crops[i], semantic_ft=features[i], score=float(scores[i]),
                                   camera_pose=camera_pose)
-                object = Object(segment=segment, pcd_points=pcd_points[i], pcd_rgb=pcd_rgb[i])
+                object = self.object_factory(segment=segment, pcd_points=pcd_points[i], pcd_rgb=pcd_rgb[i])
                 self.append(object)
 
-        self.semantic_ft = torch.from_numpy(features[~is_bg]).to(self.device)
+        self.semantic_tensor = torch.from_numpy(features[~is_bg]).to(self.device)
         self.collate_geometry()
         self.collate_keys()
 
-    def similarity(self, other: 'ObjectMap') -> torch.Tensor:
+    def match_similarities(self, other: 'ObjectMap', mask_diagonal: bool = False) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
-        semantic_sim = self.semantic_ft @ other.semantic_ft.t()
+        semantic_sim = self.semantic_tensor @ other.semantic_tensor.t()
 
-        geometric_sim = torch.cdist(self.centroids, other.centroids)
-        is_close = geometric_sim < self.max_centroid_dist
+        geometric_sim = 1 / (torch.cdist(self.geometry_tensor, other.geometry_tensor) + 1e-6)
+        is_close = geometric_sim > self.geometric_sim_thresh
 
         sim = torch.where(is_close, semantic_sim, -1 * torch.ones_like(semantic_sim))
+        sim = sim.t() # Put other on first axis
 
-        return sim
+        if mask_diagonal:
+            sim.fill_diagonal_(-1)
+
+        merge = (sim > self.semantic_sim_thresh).any(dim=1).cpu().tolist()
+        match_idx = sim.argmax(dim=1).cpu().tolist()
+
+        return merge, match_idx
 
     def __iadd__(self, other: 'ObjectMap'):
         if len(self) == 0:
@@ -123,13 +133,11 @@ class ObjectMap:
         if len(other) == 0:
             return self
 
-        sim = self.similarity(other).t()
-        merge = (sim > self.semantic_sim_thresh).any(dim=1)
-        match = sim.argmax(dim=1).cpu().tolist()
+        merge, match_idx = self.match_similarities(other)
 
         for i, obj in enumerate(other):
             if merge[i]:
-                self[match[i]] += obj
+                self[match_idx[i]] += obj
             else:
                 self.append(obj)
 
@@ -144,15 +152,12 @@ class ObjectMap:
         if len(self) == 0:
             return self
 
-        sim = self.similarity(self).t()
-        sim.fill_diagonal_(-1)  # Avoid self merge attempts
-        merge = (sim > self.semantic_sim_thresh).any(dim=1)
-        match = sim.argmax(dim=1).cpu().tolist()
+        merge, match_idx = self.match_similarities(self, mask_diagonal=True)
         to_delete = list()
 
         for i, obj in enumerate(self):
             if i not in to_delete and merge[i]:
-                j = match[i]
+                j = match_idx[i]
                 self[i] += self[j]
                 self[j] = self[i]  # Reference to i
                 if j not in to_delete:
@@ -216,12 +221,12 @@ class ObjectMap:
         return bbox
 
     @property
-    def centroids_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
+    def centroids_o3d(self) -> List[o3d.geometry.TriangleMesh]:
         if len(self):
             centroids = []
-            centroids_np = self.centroids.cpu().numpy()
-            for c in centroids_np:
+            for obj in self:
                 centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
+                c = obj.centroid
                 centroid.translate(c)
                 centroids.append(centroid)
         else:
