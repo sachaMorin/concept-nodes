@@ -8,6 +8,7 @@ dependencies = [
     "hydra-core",
     "mobile_sam@git+https://github.com/ChaoningZhang/MobileSAM.git",
     "open_clip_torch",
+    "ultralytics",
 ]
 requires-python = ">=3.8"
 
