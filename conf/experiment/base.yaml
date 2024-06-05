@@ -1,0 +1,19 @@
+# @package _global_
+defaults:
+  - /perception: PerceptionPipeline
+  - /mapping: ObjectMap
+  - _self_
+
+cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
+output_dir: /home/sacha/Documents/cg-plus/outputs
+seed: 123
+
+dataloader:
+  _target_:  torch.utils.data.DataLoader
+  batch_size: 1
+  shuffle: false
+  num_workers: 2
+  pin_memory: false
+  collate_fn:
+    _target_: rgbd_dataset.rgbd_dataset.dataloader.collate_fn_np_single_cb
+
