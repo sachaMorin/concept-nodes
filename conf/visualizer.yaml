@@ -1,0 +1,6 @@
+defaults:
+  - ft_extraction: CLIP
+  - _self_
+
+map_path: ???
+cache_dir:  /home/sacha/Documents/cg-plus/model_checkpoints

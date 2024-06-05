@@ -4,7 +4,7 @@ import matplotlib.cm as cm
 
 
 def similarities_to_rgb(
-    similarities: np.ndarray, cmap_name: str
+    similarities: np.ndarray, cmap_name: str,
 ) -> List[Tuple[int, int, int]]:
     similarities = (similarities - similarities.min()) / (
         similarities.max() - similarities.min()

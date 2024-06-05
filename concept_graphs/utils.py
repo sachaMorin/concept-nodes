@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import random
 import logging
+from .mapping.ObjectMap import ObjectMap
+import pickle
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -20,3 +22,12 @@ def set_seed(seed: int = 42) -> None:
     # Set a fixed value for the hash seed
     os.environ["PYTHONHASHSEED"] = str(seed)
     log.info(f"Random seed set as {seed}")
+
+
+def load_map(path: str) -> ObjectMap:
+    map = pickle.load(open(path, "rb"))
+
+    for obj in map:
+        obj.pcd_to_o3d()
+
+    return map

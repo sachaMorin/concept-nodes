@@ -2,9 +2,8 @@ import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 import time
-from concept_graphs.seed import set_seed
+from concept_graphs.utils import set_seed
 import logging
-import pickle
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -52,8 +51,12 @@ def main(cfg: DictConfig):
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
     # Viz
-    main_map.save_object_grids(cfg.output_dir)
-    main_map.draw_geometries(random_colors=True)
+    # main_map.save_object_grids(cfg.output_dir)
+    # main_map.draw_geometries(random_colors=True)
+
+    path = cfg.output_dir + "/map.pkl"
+    main_map.save(path)
+    log.info(f"Saved map to {path}")
 
     # query = ["a portrait"]
     # text_feature = perception_pipeline.ft_extractor.encode_text(query).cpu().numpy()

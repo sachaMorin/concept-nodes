@@ -1,2 +1,8 @@
 defaults:
   - experiment: ???
+  - _self_
+
+cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
+output_dir: /home/sacha/Documents/cg-plus/outputs
+seed: 123
+

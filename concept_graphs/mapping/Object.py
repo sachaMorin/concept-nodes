@@ -7,13 +7,13 @@ from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 
 class Object:
     def __init__(
-        self,
-        segment: Segment,
-        pcd_points: np.ndarray,
-        pcd_rgb: np.ndarray,
-        segment_heap_size: int,
-        geometry_mode: str,
-        n_sample_pcd: int = 20,
+            self,
+            segment: Segment,
+            pcd_points: np.ndarray,
+            pcd_rgb: np.ndarray,
+            segment_heap_size: int,
+            geometry_mode: str,
+            n_sample_pcd: int = 20,
     ):
         """Initialize with first segment."""
         self.geometry_mode = geometry_mode
@@ -77,6 +77,19 @@ class Object:
         self.is_downsampled = False
 
         return self
+
+    def pcd_to_np(self):
+        # Make object pickable
+        pcd_points = np.array(self.pcd.points)
+        pcd_colors = np.array(self.pcd.colors)
+        self.pcd = {"points": pcd_points, "colors": pcd_colors}
+
+    def pcd_to_o3d(self):
+        pcd_dict = self.pcd
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(pcd_dict["points"])
+        pcd.colors = o3d.utility.Vector3dVector(pcd_dict["colors"])
+        self.pcd = pcd
 
 
 class ObjectFactory:

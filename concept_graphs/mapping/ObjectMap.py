@@ -286,3 +286,12 @@ class ObjectMap:
                 c.paint_uniform_color(color)
 
         o3d.visualization.draw_geometries(pcd + centroids + bbox)
+
+    def save(self, path: str) -> None:
+        import pickle
+
+        for obj in self:
+            obj.pcd_to_np()
+
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
