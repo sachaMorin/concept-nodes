@@ -46,16 +46,18 @@ class GridMobileSAM(SegmentationModel):
         mobile_sam.eval()
 
         self.predictor = SamPredictor(mobile_sam)
-        inference_image_size = mobile_sam.image_encoder.img_size
+        sz = mobile_sam.image_encoder.img_size
         self.grid_coords = get_grid_coords(
             grid_width,
             grid_height,
-            inference_image_size,
-            inference_image_size,
+            sz,
+            sz,
             self.device,
             jitter=self.grid_jitter,
             uniform_jitter=False,
-        ).unsqueeze(1)
+        ).cpu().numpy()
+        self.grid_coords = self.predictor.transform.apply_coords(self.grid_coords, original_size=(sz, sz))
+        self.grid_coords = torch.from_numpy(self.grid_coords).to(self.device).unsqueeze(1)
         self.labels = torch.ones(grid_width * grid_height, 1).to(self.device)
 
     def __call__(

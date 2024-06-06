@@ -6,10 +6,18 @@ defaults:
 name: replica_grid_chamferdist
 
 mapping:
-  geometric_sim_thresh: 7.
-  semantic_sim_thresh: .75
+  geometric_sim_thresh: 10.
+  semantic_sim_thresh: .70
+  min_segments: 2
   filter_min_every: -1
   denoise_pcd_every: 10
   geometry_mode: chamferdist_min
   object_factory:
-    n_sample_pcd: 50
+    n_sample_pcd: 80
+
+perception:
+  bg_sim_thresh: 0.22
+
+segmentation:
+  grid_width: 9
+  grid_height: 7
