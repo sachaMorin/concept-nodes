@@ -2,6 +2,6 @@ defaults:
   - ft_extraction: CLIP
   - _self_
 
-map_path: ???
+map_path: /home/sacha/Documents/cg-plus/outputs/latest_map.pkl
 cache_dir:  /home/sacha/Documents/cg-plus/model_checkpoints
 seed: 42

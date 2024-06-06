@@ -3,6 +3,8 @@ defaults:
   - replica_grid_centroid
   - _self_
 
+name: replica_grid_chamferdist
+
 mapping:
   geometric_sim_thresh: 7.
   semantic_sim_thresh: .75

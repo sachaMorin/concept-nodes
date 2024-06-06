@@ -6,6 +6,8 @@ defaults:
   - /ft_extraction: CLIP # Keep top level for easier overrides
   - _self_
 
+name: replica_grid_centroid
+
 dataset:
   base_path: /home/sacha/Downloads/Replica
   sequence_stride: 5

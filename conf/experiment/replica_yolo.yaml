@@ -4,6 +4,8 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
+name: replica_yolo
+
 mapping:
   geometric_sim_thresh: 4.
   semantic_sim_thresh: .75

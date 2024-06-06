@@ -1,9 +1,14 @@
+import datetime
+import os
+
+from pathlib import Path
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
 import time
 from concept_graphs.utils import set_seed
 import logging
+
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -11,6 +16,7 @@ log = logging.getLogger(__name__)
 
 @hydra.main(version_base=None, config_path="conf", config_name="main")
 def main(cfg: DictConfig):
+    log.info(f"Running config with name {cfg.name}...")
     log.info("Loading data and models...")
     set_seed(cfg.seed)
     dataset = hydra.utils.instantiate(cfg.dataset)
@@ -50,21 +56,31 @@ def main(cfg: DictConfig):
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
-    # Viz
-    # main_map.save_object_grids(cfg.output_dir)
-    # main_map.draw_geometries(random_colors=True)
+    # Save visualizations and map
+    output_dir = Path(cfg.output_dir)
+    now = datetime.datetime.now()
+    date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
+    output_dir_map = output_dir / f"{cfg.name}_{date_time}"
 
-    path = cfg.output_dir + "/map.pkl"
-    main_map.save(path)
-    log.info(f"Saved map to {path}")
+    grid_image_path = output_dir_map / "grid_image"
+    os.makedirs(grid_image_path, exist_ok=False)
+    main_map.save_object_grids(grid_image_path)
+    log.info(f"Saved images to {grid_image_path}")
 
-    # query = ["a portrait"]
-    # text_feature = perception_pipeline.ft_extractor.encode_text(query).cpu().numpy()
-    # similarities = output["features"] @ text_feature.T
-    #
-    # from concept_graphs.viz.object_pcd import visualize_object_pcd_similarities, visualize_object_pcd
-    # visualize_object_pcd(output["pcd_points"])
-    # visualize_object_pcd_similarities(output["pcd_points"], similarities)
+    map_path = output_dir_map / "map.pkl"
+    main_map.save(map_path)
+    log.info(f"Saved map to {map_path}")
+
+    # Dump hydra config
+    OmegaConf.save(cfg, output_dir_map / "config.yaml")
+    log.info(f"Saved config to {output_dir_map / 'config.yaml'}")
+
+    # Create symlink to latest map
+    symlink = output_dir / "latest_map.pkl"
+    symlink.unlink(missing_ok=True)
+    os.symlink(map_path, symlink)
+    log.info(f"Created symlink to latest map at {symlink}")
+
 
 if __name__ == "__main__":
     main()
