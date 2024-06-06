@@ -79,3 +79,51 @@ def extract_mask_crops(masks: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
         crop = mask[box[1] : box[3], box[0] : box[2]]
         crops.append(crop)
     return crops
+
+
+def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7):
+    '''
+    Compute the containing relationship between all pair of bounding boxes.
+    For each mask, subtract the mask of bounding boxes that are contained by it.
+
+    Stolen from original ConceptGraphs repo at https://github.com/concept-graphs/concept-graphs
+
+    Args:
+        xyxy: (N, 4), in (x1, y1, x2, y2) format
+        mask: (N, H, W), binary mask
+        th1: float, threshold for computing intersection over box1
+        th2: float, threshold for computing intersection over box2
+
+    Returns:
+        mask_sub: (N, H, W), binary mask
+    '''
+    N = xyxy.shape[0]  # number of boxes
+
+    # Get areas of each xyxy
+    areas = (xyxy[:, 2] - xyxy[:, 0]) * (xyxy[:, 3] - xyxy[:, 1])  # (N,)
+
+    # Compute intersection boxes
+    lt = np.maximum(xyxy[:, None, :2], xyxy[None, :, :2])  # left-top points (N, N, 2)
+    rb = np.minimum(xyxy[:, None, 2:], xyxy[None, :, 2:])  # right-bottom points (N, N, 2)
+
+    inter = (rb - lt).clip(min=0)  # intersection sizes (dx, dy), if no overlap, clamp to zero (N, N, 2)
+
+    # Compute areas of intersection boxes
+    inter_areas = inter[:, :, 0] * inter[:, :, 1]  # (N, N)
+
+    inter_over_box1 = inter_areas / areas[:, None]  # (N, N)
+    # inter_over_box2 = inter_areas / areas[None, :] # (N, N)
+    inter_over_box2 = inter_over_box1.T  # (N, N)
+
+    # if the intersection area is smaller than th2 of the area of box1,
+    # and the intersection area is larger than th1 of the area of box2,
+    # then box2 is considered contained by box1
+    contained = (inter_over_box1 < th2) & (inter_over_box2 > th1)  # (N, N)
+    contained_idx = contained.nonzero()  # (num_contained, 2)
+
+    mask_sub = mask.copy()  # (N, H, W)
+    # mask_sub[contained_idx[0]] = mask_sub[contained_idx[0]] & (~mask_sub[contained_idx[1]])
+    for i in range(len(contained_idx[0])):
+        mask_sub[contained_idx[0][i]] = mask_sub[contained_idx[0][i]] & (~mask_sub[contained_idx[1][i]])
+
+    return mask_sub

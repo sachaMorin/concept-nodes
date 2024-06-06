@@ -3,7 +3,7 @@ import numpy as np
 from .ft_extraction.FeatureExtractor import FeatureExtractor
 from .segmentation.SegmentationModel import SegmentationModel
 from .rgbd_to_pcd import rgbd_to_object_pcd
-from .segmentation.utils import extract_rgb_crops, extract_mask_crops, safe_bbox_inflate
+from .segmentation.utils import extract_rgb_crops, extract_mask_crops, safe_bbox_inflate, mask_subtract_contained
 
 
 class PerceptionPipeline:
@@ -13,6 +13,7 @@ class PerceptionPipeline:
         ft_extractor: FeatureExtractor,
         inflate_bbox_px: int,
         depth_trunc: float,
+        mask_subtract_contained: bool,
         bg_classes: Union[List[str], None],
         bg_sim_thresh: float,
         crop_bg_color: Union[int, None] = None,
@@ -22,6 +23,7 @@ class PerceptionPipeline:
         self.depth_trunc = depth_trunc
         self.inflate_bbox_px = inflate_bbox_px
         self.crop_bg_color = crop_bg_color
+        self.mask_subtract_contained = mask_subtract_contained
         self.bg_classes = bg_classes
         self.bg_sim_thresh = bg_sim_thresh
         self.bg_features = None
@@ -46,6 +48,9 @@ class PerceptionPipeline:
             bbox.cpu().numpy(),
             scores.cpu().numpy(),
         )
+
+        if self.mask_subtract_contained:
+            masks = mask_subtract_contained(bbox, masks)
 
         mask_crops = extract_mask_crops(masks, bbox)
         rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops, self.crop_bg_color)
