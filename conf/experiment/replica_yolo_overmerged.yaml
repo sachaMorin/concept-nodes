@@ -7,17 +7,26 @@ defaults:
 name: replica_yolo
 
 mapping:
-  geometric_sim_thresh: 10.
-  semantic_sim_thresh: .70
+  geometric_sim_thresh: 8.
+  semantic_sim_thresh: .65
   min_segments: 6
   filter_min_every: -1
   denoise_pcd_every: 10
   geometry_mode: chamferdist_min
   object_factory:
-    n_sample_pcd: 80
+    n_sample_pcd: 50
 
 perception:
-  bg_sim_thresh: 0.22
+  bg_sim_thresh: 0.26
+  bg_classes:
+    - wall
+    - walls
+    - floor
+    - ceiling
+    - ground
+    - carpet
+    - wall with holes
+    - floor with holes
 
 segmentation:
   yolo_device: cuda
