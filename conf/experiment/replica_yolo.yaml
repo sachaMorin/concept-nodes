@@ -18,6 +18,3 @@ mapping:
 
 perception:
   bg_sim_thresh: 0.22
-
-segmentation:
-  yolo_device: cuda

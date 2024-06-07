@@ -52,11 +52,11 @@ def main(cfg: DictConfig):
     main_map.denoise_pcd()
     main_map.self_merge()
 
-    main_map.draw_geometries(random_colors=False)
-
     stop = time.time()
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
+
+    main_map.draw_geometries(random_colors=False)
 
     # Save visualizations and map
     output_dir = Path(cfg.output_dir)
