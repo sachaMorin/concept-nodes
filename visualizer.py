@@ -22,7 +22,6 @@ def main(cfg: DictConfig):
     pcd = map.pcd_o3d
     bbox = map.oriented_bbox_o3d
     centroids = map.centroids_o3d
-    number_labels = [o3d.visualization.gui.Label(str(i)) for i in range(len(pcd))]
 
     # Colorings
     og_colors = [o3d.utility.Vector3dVector(copy.deepcopy(p.colors)) for p in pcd]
@@ -90,9 +89,10 @@ def main(cfg: DictConfig):
     def query(vis):
         nonlocal ft_extractor
         nonlocal sim_query
+        nonlocal similarity_cb
         query = input("Enter query: ")
         query_ft = ft_extractor.encode_text([query])
-        sim_query = query_ft @ map.semantic_tensor.T
+        sim_query = similarity_cb.semantic_similarity(map.semantic_tensor.float(), query_ft)
         sim_query = sim_query.squeeze().cpu().numpy()
         # # Calling toggle_sim(vis) is buggy so we just update colors here directly
         rgb = similarities_to_rgb(sim_query, cmap_name="viridis")

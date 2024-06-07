@@ -17,6 +17,11 @@ class CosineSimilarity01Multi(SemanticSimilarity):
         self.agg = agg
 
     def __call__(self, main_semantic: torch.Tensor, other_semantic: torch.Tensor) -> torch.Tensor:
+        if main_semantic.dim() == 2:
+            main_semantic = main_semantic.unsqueeze(0)
+        if other_semantic.dim() == 2:
+            other_semantic = other_semantic.unsqueeze(0)
+
         sim = torch.einsum("ijk,lmk->iljm", main_semantic, other_semantic)/2 + .5
         if self.agg == "mean":
             return sim.mean(dim=(2, 3))
