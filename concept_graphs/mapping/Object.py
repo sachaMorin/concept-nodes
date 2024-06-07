@@ -33,6 +33,9 @@ class Object:
         self.is_denoised = False
         self.is_downsampled = False
 
+    def __repr__(self):
+        return f"Object with {len(self.segments)} segments. Detected a total of {self.n_segments} times."
+
     @property
     def centroid(self):
         return np.mean(self.pcd.points, axis=0)

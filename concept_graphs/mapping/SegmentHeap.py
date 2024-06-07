@@ -10,8 +10,11 @@ class SegmentHeap:
     def __iter__(self):
         return iter(self.heap)
 
+    def __len__(self):
+        return len(self.heap)
+
     def __repr__(self):
-        return f"SegmentHeap of size {len(self.heap)} with max size {self.max_size} and segment scores {[s.score for s in self]}"
+        return f"SegmentHeap of size {len(self)} with max size {self.max_size} and segment scores {[s.score for s in self]}"
 
     def push(self, segment: Segment):
         if len(self.heap) < self.max_size:
