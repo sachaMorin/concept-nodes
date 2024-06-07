@@ -2,6 +2,7 @@
 defaults:
   - /perception: PerceptionPipeline
   - /mapping: ObjectMap
+  - /segmentation: ???
   - _self_
 
 dataloader:

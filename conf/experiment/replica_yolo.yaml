@@ -1,10 +1,22 @@
 # @package _global_
 defaults:
-  - replica_grid_centroid
+  - base
+  - /dataset: Replica
+  - /ft_extraction: CLIP
   - override /segmentation: YoloMobileSAM
   - _self_
 
 name: replica_yolo
+
+dataset:
+  base_path: /home/sacha/Downloads/Replica
+  sequence_stride: 5
+  resized_width: 600
+  resized_height: 340
+
+perception:
+  bg_sim_thresh: 0.61
+  crop_bg_color: 255
 
 mapping:
   similarity:
@@ -19,6 +31,3 @@ mapping:
   filter_min_every: 50
   denoise_pcd_every: 10
   device: cpu
-
-perception:
-  bg_sim_thresh: 0.61
