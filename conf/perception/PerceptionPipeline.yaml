@@ -10,5 +10,7 @@ bg_classes:
   - ceiling
   - wall with holes
   - floor with holes
-bg_sim_thresh: 0.21
+bg_sim_thresh: 0.605
 crop_bg_color: null  # null: keep bg, 0: black, 255: white
+semantic_similarity:
+  _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01

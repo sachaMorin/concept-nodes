@@ -41,10 +41,11 @@ def main(cfg: DictConfig):
 
         local_map = hydra.utils.instantiate(cfg.mapping)
         local_map.from_perception(**segments, camera_pose=obs["camera_pose"])
-        n_segments += len(local_map)
 
         main_map += local_map
+
         progress_bar.update(1)
+        n_segments += len(local_map)
         progress_bar.set_postfix(objects=len(main_map), segments=n_segments)
 
     main_map.filter_min_segments()
@@ -59,23 +60,23 @@ def main(cfg: DictConfig):
     main_map.draw_geometries(random_colors=False)
 
     # Save visualizations and map
+    if not cfg.save_map:
+        return
+
     output_dir = Path(cfg.output_dir)
     now = datetime.datetime.now()
     date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
     output_dir_map = output_dir / f"{cfg.name}_{date_time}"
 
+    log.info(f"Saving map, images and config to {output_dir_map}...")
     grid_image_path = output_dir_map / "grid_image"
     os.makedirs(grid_image_path, exist_ok=False)
     main_map.save_object_grids(grid_image_path)
-    log.info(f"Saved images to {grid_image_path}")
 
     map_path = output_dir_map / "map.pkl"
     main_map.save(map_path)
-    log.info(f"Saved map to {map_path}")
 
-    # Dump hydra config
     OmegaConf.save(cfg, output_dir_map / "config.yaml")
-    log.info(f"Saved config to {output_dir_map / 'config.yaml'}")
 
     # Create symlink to latest map
     symlink = output_dir / "latest_map.pkl"

@@ -7,14 +7,15 @@ defaults:
 name: replica_yolo
 
 mapping:
-  geometric_sim_thresh: 10.
-  semantic_sim_thresh: .70
+  similarity:
+    geometric_sim_thresh: 10.
+    semantic_sim_thresh: .85
+  object_factory:
+    geometry_mode: chamferdist_min
+    n_sample_pcd: 80
   min_segments: 6
   filter_min_every: -1
   denoise_pcd_every: 10
-  geometry_mode: chamferdist_min
-  object_factory:
-    n_sample_pcd: 80
 
 perception:
-  bg_sim_thresh: 0.22
+  bg_sim_thresh: 0.61

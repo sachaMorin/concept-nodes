@@ -5,17 +5,15 @@ import open3d as o3d
 from .Segment import Segment
 from .Object import Object, ObjectFactory
 from .pcd_callbacks.PointCloudCallback import PointCloudCallback
-from .similarities.match_similarities import match_similarities
+from .similarity.Similarity import Similarity
 
 
 class ObjectMap:
 
     def __init__(
         self,
-        geometric_sim_thresh: float,
-        semantic_sim_thresh: float,
+        similarity: Similarity,
         min_segments: int,
-        geometry_mode: str,
         object_factory: ObjectFactory,
         denoising_callback: Union[PointCloudCallback, None] = None,
         downsampling_callback: Union[PointCloudCallback, None] = None,
@@ -25,10 +23,8 @@ class ObjectMap:
         downsample_pcd_every: int = -1,
         device: str = "cpu",
     ):
-        self.geometric_sim_thresh = geometric_sim_thresh
-        self.semantic_sim_thresh = semantic_sim_thresh
+        self.similarity = similarity
         self.min_segments = min_segments
-        self.geometry_mode = geometry_mode
         self.object_factory = object_factory
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
@@ -150,14 +146,11 @@ class ObjectMap:
         self, other: "ObjectMap", mask_diagonal: bool = False
     ) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
-        return match_similarities(
+        return self.similarity(
             main_semantic=self.semantic_tensor,
             main_geometry=self.geometry_tensor,
             other_semantic=other.semantic_tensor,
             other_geometry=other.geometry_tensor,
-            semantic_sim_thresh=self.semantic_sim_thresh,
-            geometric_sim_thresh=self.geometric_sim_thresh,
-            geometry_mode=self.geometry_mode,
             mask_diagonal=mask_diagonal,
         )
 

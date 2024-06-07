@@ -1,0 +1,8 @@
+_target_: concept_graphs.mapping.similarity.Similarity.Similarity
+geometric_similarity:
+    _target_: concept_graphs.mapping.similarity.geometric.ChamferDist
+    agg: min
+semantic_similarity:
+  _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
+geometric_sim_thresh: 0.5
+semantic_sim_thresh: 0.5

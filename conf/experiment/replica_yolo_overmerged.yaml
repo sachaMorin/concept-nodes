@@ -8,7 +8,7 @@ name: replica_yolo
 
 mapping:
   geometric_sim_thresh: 8.
-  semantic_sim_thresh: .65
+  semantic_sim_thresh: .825
   min_segments: 6
   filter_min_every: -1
   denoise_pcd_every: 10
@@ -17,7 +17,7 @@ mapping:
     n_sample_pcd: 50
 
 perception:
-  bg_sim_thresh: 0.26
+  bg_sim_thresh: 0.63
   bg_classes:
     - wall
     - walls

@@ -14,8 +14,9 @@ class PerceptionPipeline:
         inflate_bbox_px: int,
         depth_trunc: float,
         mask_subtract_contained: bool,
-        bg_classes: Union[List[str], None],
-        bg_sim_thresh: float,
+        semantic_similarity: "SemanticSimilarity" = None,
+        bg_classes: Union[List[str], None] = None,
+        bg_sim_thresh: float = 1.0,
         crop_bg_color: Union[int, None] = None,
     ):
         self.segmentation_model = segmentation_model
@@ -24,6 +25,7 @@ class PerceptionPipeline:
         self.inflate_bbox_px = inflate_bbox_px
         self.crop_bg_color = crop_bg_color
         self.mask_subtract_contained = mask_subtract_contained
+        self.semantic_similarity = semantic_similarity
         self.bg_classes = bg_classes
         self.bg_sim_thresh = bg_sim_thresh
         self.bg_features = None
@@ -58,7 +60,7 @@ class PerceptionPipeline:
         features = self.ft_extractor(rgb_crops)
 
         if self.bg_features is not None:
-            sim = features @ self.bg_features.T
+            sim = self.semantic_similarity(features, self.bg_features)
             bg = (sim > self.bg_sim_thresh).any(dim=1).cpu().numpy()
         else:
             bg = np.zeros(len(features), dtype=bool)
