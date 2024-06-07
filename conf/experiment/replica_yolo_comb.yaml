@@ -27,9 +27,10 @@ mapping:
     semantic_sim_thresh: .2
     sim_thresh: .75
   object_factory:
+    semantic_mode: mean
     geometry_mode: pcd
     n_sample_pcd: 80
   min_segments: 3
   filter_min_every: 50
-  denoise_pcd_every: 10
+  collate_objects_every: 5
   device: cpu

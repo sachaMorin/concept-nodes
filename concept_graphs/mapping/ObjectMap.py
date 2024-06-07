@@ -132,9 +132,7 @@ class ObjectMap:
                 )
                 self.append(object)
 
-        self.semantic_tensor = torch.from_numpy(features[~is_bg]).to(self.device)
-        self.collate_geometry()
-        self.collate_keys()
+        self.collate()
 
     def match_similarities(
         self, other: "ObjectMap", mask_diagonal: bool = False

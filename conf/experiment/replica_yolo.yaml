@@ -6,7 +6,7 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-name: replica_yolo
+name: replica_yolo_comb
 
 dataset:
   base_path: /home/sacha/Downloads/Replica
@@ -22,13 +22,16 @@ mapping:
   similarity:
     geometric_similarity:
       eps: 0.1
+    semantic_similarity:
+      _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
+      agg: max
     geometric_sim_thresh: .6
     semantic_sim_thresh: .85
   object_factory:
+    semantic_mode: multi
     geometry_mode: pcd
     n_sample_pcd: 80
   min_segments: 3
   filter_min_every: 50
-#  denoise_pcd_every: 10
   collate_objects_every: 5
   device: cpu

@@ -9,19 +9,22 @@ from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 class Object:
     def __init__(
             self,
+            score: float,
             rgb: np.ndarray,
             mask: np.ndarray,
             semantic_ft: np.ndarray,
             camera_pose: np.ndarray,
-            score: float,
             pcd_points: np.ndarray,
             pcd_rgb: np.ndarray,
             segment_heap_size: int,
             geometry_mode: str,
+            semantic_mode: str,
             n_sample_pcd: int = 20,
             denoising_callback: Union[PointCloudCallback, None] = None,
             downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
+        self.segment_heap_size = segment_heap_size
+        self.semantic_mode = semantic_mode
         self.geometry_mode = geometry_mode
         self.n_sample_pcd = n_sample_pcd
         self.denoising_callback = denoising_callback
@@ -96,9 +99,15 @@ class Object:
         ft = [v.semantic_ft for v in self.segments]
         ft = np.stack(ft, axis=0)
 
-        mean = np.mean(ft, axis=0)
+        if self.semantic_mode == "mean":
+            mean = np.mean(ft, axis=0)
+            self.semantic_ft = mean / np.linalg.norm(mean, 2)
+        elif self.semantic_mode == "multi":
+            if len(ft) < self.segment_heap_size:
+                self.semantic_ft = np.concatenate([ft, np.zeros((self.segment_heap_size - len(ft), ft.shape[1]))], axis=0)
+            else:
+                self.semantic_ft = ft
 
-        self.semantic_ft = mean / np.linalg.norm(mean, 2)
 
     def collate(self):
         if not self.is_collated:
