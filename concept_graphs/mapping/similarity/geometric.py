@@ -1,6 +1,5 @@
 import torch
 from .Similarity import GeometricSimilarity
-from .chamferdist import chamferdist_batch
 
 
 class CentroidDist(GeometricSimilarity):
