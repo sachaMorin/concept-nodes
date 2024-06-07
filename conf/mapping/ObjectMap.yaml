@@ -7,7 +7,7 @@ _target_: concept_graphs.mapping.ObjectMap.ObjectMap
 object_factory:
   _target_: concept_graphs.mapping.Object.ObjectFactory
   segment_heap_size: 12
-  geometry_mode: "centroid"
+  geometry_mode: "pcd"
 
 min_segments: 4
 self_merge_every: 10

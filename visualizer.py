@@ -29,6 +29,7 @@ def main(cfg: DictConfig):
 
     # CLIP
     ft_extractor = hydra.utils.instantiate(cfg.ft_extraction)
+    map.semantic_tensor = map.semantic_tensor.to(ft_extractor.device)
 
     # Visualizer
     vis = o3d.visualization.VisualizerWithKeyCallback()

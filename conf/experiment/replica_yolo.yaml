@@ -8,14 +8,17 @@ name: replica_yolo
 
 mapping:
   similarity:
-    geometric_sim_thresh: 10.
+    geometric_similarity:
+      eps: 0.1
+    geometric_sim_thresh: .6
     semantic_sim_thresh: .85
   object_factory:
-    geometry_mode: chamferdist_min
+    geometry_mode: pcd
     n_sample_pcd: 80
-  min_segments: 6
-  filter_min_every: -1
+  min_segments: 3
+  filter_min_every: 50
   denoise_pcd_every: 10
+  device: cpu
 
 perception:
   bg_sim_thresh: 0.61

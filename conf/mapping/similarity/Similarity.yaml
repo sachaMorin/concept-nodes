@@ -1,8 +1,9 @@
 _target_: concept_graphs.mapping.similarity.Similarity.Similarity
 geometric_similarity:
-    _target_: concept_graphs.mapping.similarity.geometric.ChamferDist
-    agg: min
+    _target_: concept_graphs.mapping.similarity.geometric.RadiusOverlap
+    agg: max
+    eps: 0.1
 semantic_similarity:
   _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
-geometric_sim_thresh: 0.5
-semantic_sim_thresh: 0.5
+geometric_sim_thresh: 0.6
+semantic_sim_thresh: 0.85

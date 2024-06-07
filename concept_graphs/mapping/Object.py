@@ -40,7 +40,7 @@ class Object:
     def update_geometry(self):
         if self.geometry_mode == "centroid":
             self.geometry = self.centroid
-        elif self.geometry_mode in ["chamferdist", "chamferdist_min"]:
+        elif self.geometry_mode == "pcd":
             points = np.asarray(self.pcd.points)
             n_points = points.shape[0]
 
