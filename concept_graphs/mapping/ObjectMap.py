@@ -15,23 +15,17 @@ class ObjectMap:
         similarity: Similarity,
         min_segments: int,
         object_factory: ObjectFactory,
-        denoising_callback: Union[PointCloudCallback, None] = None,
-        downsampling_callback: Union[PointCloudCallback, None] = None,
-        self_merge_every: int = -1,
-        filter_min_every: int = -1,
-        denoise_pcd_every: int = -1,
-        downsample_pcd_every: int = -1,
+        filter_min_every: int,
+        collate_objects_every: int,
+        self_merge_every: int,
         device: str = "cpu",
     ):
         self.similarity = similarity
         self.min_segments = min_segments
         self.object_factory = object_factory
-        self.denoising_callback = denoising_callback
-        self.downsampling_callback = downsampling_callback
-        self.self_merge_every = self_merge_every
         self.filter_min_every = filter_min_every
-        self.denoise_pcd_every = denoise_pcd_every
-        self.downsample_pcd_every = downsample_pcd_every
+        self.collate_objects_every = collate_objects_every
+        self.self_merge_every = self_merge_every
         self.device = device
 
         self.current_id = 0
@@ -126,15 +120,15 @@ class ObjectMap:
 
         for i in range(len(rgb_crops)):
             if not is_bg[i]:
-                segment = Segment(
+                # Transform pcd_points with camera_pose
+                object = self.object_factory(
                     rgb=rgb_crops[i],
                     mask=mask_crops[i],
                     semantic_ft=features[i],
-                    score=float(scores[i]),
+                    pcd_points=pcd_points[i],
+                    pcd_rgb=pcd_rgb[i],
                     camera_pose=camera_pose,
-                )
-                object = self.object_factory(
-                    segment=segment, pcd_points=pcd_points[i], pcd_rgb=pcd_rgb[i]
+                    score=float(scores[i]),
                 )
                 self.append(object)
 
@@ -201,30 +195,15 @@ class ObjectMap:
         }
         self.collate()
 
-    def denoise_pcd(self):
-        if self.denoising_callback is not None:
-            for obj in self:
-                if not obj.is_denoised:
-                    obj.apply_pcd_callback(self.denoising_callback)
-                    obj.is_denoised = True
-
-    def downsample_pcd(self):
-        if self.downsampling_callback is not None:
-            for obj in self:
-                if not obj.is_downsampled:
-                    obj.apply_pcd_callback(self.downsampling_callback)
-                    obj.is_downsampled = True
+    def collate_objects(self):
+        for obj in self:
+            obj.collate()
 
     def check_processing(self):
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
-        if (
-            self.downsample_pcd_every > 0
-            and self.n_updates % self.downsample_pcd_every == 0
-        ):
-            self.downsample_pcd()
-        if self.denoise_pcd_every > 0 and self.n_updates % self.denoise_pcd_every == 0:
-            self.denoise_pcd()
+        if self.collate_objects_every > 0 and self.n_updates % self.collate_objects_every == 0:
+            self.collate_objects()
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
             self.self_merge()
 

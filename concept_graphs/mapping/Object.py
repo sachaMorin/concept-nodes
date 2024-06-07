@@ -1,3 +1,4 @@
+from typing import Union
 import numpy as np
 import open3d as o3d
 from .Segment import Segment
@@ -8,30 +9,57 @@ from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 class Object:
     def __init__(
             self,
-            segment: Segment,
+            rgb: np.ndarray,
+            mask: np.ndarray,
+            semantic_ft: np.ndarray,
+            camera_pose: np.ndarray,
+            score: float,
             pcd_points: np.ndarray,
             pcd_rgb: np.ndarray,
             segment_heap_size: int,
             geometry_mode: str,
             n_sample_pcd: int = 20,
+            denoising_callback: Union[PointCloudCallback, None] = None,
+            downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
-        """Initialize with first segment."""
         self.geometry_mode = geometry_mode
         self.n_sample_pcd = n_sample_pcd
+        self.denoising_callback = denoising_callback
+        self.downsampling_callback = downsampling_callback
+
+        self.geometry = None
+        self.semantic_ft = None
         self.segments = SegmentHeap(max_size=segment_heap_size)
-        self.segments.push(segment)
         self.n_segments = 1
+
+        # Set our first object-level point cloud
         self.pcd = o3d.geometry.PointCloud()
         self.pcd.points = o3d.utility.Vector3dVector(pcd_points)
         self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.0)
-        self.pcd.transform(segment.camera_pose)
+        self.pcd.transform(camera_pose)
+        self.downsample()
+        self.denoise()
 
-        self.geometry = None
+        # Use processed pcd for segment
+        pcd_points = np.array(self.pcd.points)
+        pcd_rgb = np.array(self.pcd.colors)
+
+        # Create first segment and push to heap
+        segment = Segment(
+            rgb=rgb,
+            mask=mask,
+            semantic_ft=semantic_ft,
+            camera_pose=camera_pose,
+            score=score,
+            pcd_points=pcd_points,
+            pcd_rgb=pcd_rgb,
+        )
+
+        self.segments.push(segment)
+
         self.update_geometry()
-        self.semantic_ft = segment.semantic_ft
-
-        self.is_denoised = False
-        self.is_downsampled = False
+        self.update_semantic_ft()
+        self.is_collated = True
 
     def __repr__(self):
         return f"Object with {len(self.segments)} segments. Detected a total of {self.n_segments} times."
@@ -40,7 +68,14 @@ class Object:
     def centroid(self):
         return np.mean(self.pcd.points, axis=0)
 
+    def update_pcd(self):
+        points = np.concatenate([s.pcd_points for s in self.segments], axis=0)
+        colors = np.concatenate([s.pcd_rgb for s in self.segments], axis=0)
+        self.pcd.points = o3d.utility.Vector3dVector(points)
+        self.pcd.colors = o3d.utility.Vector3dVector(colors)
+
     def update_geometry(self):
+        # Update geometry
         if self.geometry_mode == "centroid":
             self.geometry = self.centroid
         elif self.geometry_mode == "pcd":
@@ -65,19 +100,28 @@ class Object:
 
         self.semantic_ft = mean / np.linalg.norm(mean, 2)
 
-    def apply_pcd_callback(self, callback: PointCloudCallback):
-        self.pcd = callback(self.pcd)
-        self.update_geometry()
+    def collate(self):
+        if not self.is_collated:
+            self.update_pcd()
+            self.update_geometry()
+            self.update_semantic_ft()
+
+            self.is_collated = True
+
+    def denoise(self):
+        if self.denoising_callback is not None:
+            self.pcd = self.denoising_callback(self.pcd)
+
+    def downsample(self):
+        if self.downsampling_callback is not None:
+            self.pcd = self.downsampling_callback(self.pcd)
 
     def __iadd__(self, other):
-        self.segments.extend(other.segments)
+        segment_added = self.segments.extend(other.segments)
         self.n_segments += other.n_segments
-        self.pcd += other.pcd
-        self.update_geometry()
-        self.update_semantic_ft()
 
-        self.is_denoised = False
-        self.is_downsampled = False
+        if segment_added:
+            self.is_collated = False
 
         return self
 

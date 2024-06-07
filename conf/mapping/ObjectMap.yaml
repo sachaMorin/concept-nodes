@@ -1,6 +1,6 @@
 defaults:
-  - pcd_callbacks@denoising_callback: DBSCAN
-  - pcd_callbacks@downsampling_callback: VoxelDownSampling
+  - pcd_callbacks@object_factory.denoising_callback: DBSCAN
+  - pcd_callbacks@object_factory.downsampling_callback: VoxelDownSampling
   - similarity: Similarity
 
 _target_: concept_graphs.mapping.ObjectMap.ObjectMap
@@ -12,7 +12,6 @@ object_factory:
 min_segments: 4
 self_merge_every: 10
 filter_min_every: -1
-denoise_pcd_every: 10
-downsample_pcd_every: 10
+collate_objects_every: 5
 
 device: cuda

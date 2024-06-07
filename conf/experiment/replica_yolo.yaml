@@ -29,5 +29,6 @@ mapping:
     n_sample_pcd: 80
   min_segments: 3
   filter_min_every: 50
-  denoise_pcd_every: 10
+#  denoise_pcd_every: 10
+  collate_objects_every: 5
   device: cpu
