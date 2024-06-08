@@ -34,6 +34,7 @@ class Object:
         self.semantic_ft = None
         self.segments = SegmentHeap(max_size=segment_heap_size)
         self.n_segments = 1
+        self.caption = ""
 
         # Set our first object-level point cloud
         self.pcd = o3d.geometry.PointCloud()

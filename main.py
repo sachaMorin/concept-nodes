@@ -56,6 +56,11 @@ def main(cfg: DictConfig):
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
+    if hasattr(cfg, "vlm") and cfg.vlm is not None:
+        log.info("Captioning objects...")
+        captioner = hydra.utils.instantiate(cfg.vlm)
+        main_map.caption_objects(captioner)
+
     main_map.draw_geometries(random_colors=False)
 
     # Save visualizations and map

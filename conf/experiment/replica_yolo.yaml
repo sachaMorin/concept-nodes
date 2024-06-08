@@ -3,10 +3,11 @@ defaults:
   - base
   - /dataset: Replica
   - /ft_extraction: CLIP
+  - /vlm: OpenAICaptioner
   - override /segmentation: YoloMobileSAM
   - _self_
 
-name: replica_yolo_comb
+name: replica_yolo
 
 dataset:
   base_path: /home/sacha/Downloads/Replica

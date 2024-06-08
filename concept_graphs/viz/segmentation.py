@@ -4,13 +4,17 @@ import torchvision
 import torchvision.transforms.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
+import textwrap
 from .utils import similarities_to_rgb
 
+def wrap_text(text, max_length=30):
+    return "\n".join(textwrap.wrap(text, max_length))
 
 def plot_grid_images(
     images: List[Union[np.ndarray, torch.Tensor]],
     masks: List[np.ndarray] = None,
     grid_width: int = 4,
+    title: str = "",
 ) -> None:
     n_images = len(images)
     grid_height = int(np.ceil(n_images / grid_width))
@@ -33,6 +37,8 @@ def plot_grid_images(
             ax.axis("off")
         else:
             ax.axis("off")
+    if title:
+        plt.suptitle(wrap_text(title, 30), fontsize=32)
     plt.tight_layout()
 
 

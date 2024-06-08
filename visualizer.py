@@ -151,7 +151,7 @@ class CallbackManager:
         obj = self.map[obj_id]
 
         rgb_crops = [v.rgb for v in obj.segments]
-        plot_grid_images(rgb_crops, None, grid_width=3)
+        plot_grid_images(rgb_crops, None, grid_width=3, title=obj.caption)
         plt.show()
 
     def register_callbacks(self, vis):

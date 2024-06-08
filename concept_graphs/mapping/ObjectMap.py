@@ -1,11 +1,14 @@
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Tuple
 import numpy as np
 import torch
 import open3d as o3d
-from .Segment import Segment
 from .Object import Object, ObjectFactory
-from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 from .similarity.Similarity import Similarity
+import logging
+
+
+# A logger for this file
+log = logging.getLogger(__name__)
 
 
 class ObjectMap:
@@ -205,14 +208,19 @@ class ObjectMap:
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
             self.self_merge()
 
+    def caption_objects(self, captioner: "ImageCaptioner"):
+        for obj in self:
+            views = [v.rgb for v in obj.segments]
+            obj.caption = captioner(views)
+            log.info(obj.caption)
+
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
         from ..viz.segmentation import plot_grid_images
 
         for i, obj in enumerate(self):
             rgb_crops = [v.rgb for v in obj.segments]
-            masks = [v.mask for v in obj.segments]
-            plot_grid_images(rgb_crops, None, grid_width=3)
+            plot_grid_images(rgb_crops, None, grid_width=3, title=obj.caption)
             plt.savefig(f"{save_dir}/{i}.png")
             plt.close()
 
