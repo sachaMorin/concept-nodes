@@ -2,13 +2,15 @@ import hydra
 from omegaconf import DictConfig
 import logging
 
-from concept_graphs.utils import load_map, set_seed
-from concept_graphs.viz.utils import similarities_to_rgb
 import numpy as np
+import matplotlib.pyplot as plt
 import open3d as o3d
 import open3d.visualization.gui as gui
-import open3d.visualization.rendering as rendering
 import copy
+
+from concept_graphs.utils import load_map, set_seed
+from concept_graphs.viz.utils import similarities_to_rgb
+from concept_graphs.viz.segmentation import plot_grid_images
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -143,6 +145,15 @@ class CallbackManager:
         log.info(f"Geometric Similarity: {self.self_geometric_sim[obj1, obj2]}")
         log.info(f"Semantic Similarity: {self.self_semantic_sim[obj1, obj2]}")
 
+    def view(self, vis):
+        obj_id = input("Object Id: ")
+        obj_id = int(obj_id)
+        obj = self.map[obj_id]
+
+        rgb_crops = [v.rgb for v in obj.segments]
+        plot_grid_images(rgb_crops, None, grid_width=3)
+        plt.show()
+
     def register_callbacks(self, vis):
         if self.mode == "keycallback":
             vis.register_key_callback(ord("R"), self.toggle_rgb)
@@ -152,6 +163,7 @@ class CallbackManager:
             vis.register_key_callback(ord("C"), self.toggle_centroids)
             vis.register_key_callback(ord("Q"), self.query)
             vis.register_key_callback(ord("P"), self.toggle_pairwise_inspect)
+            vis.register_key_callback(ord("V"), self.view)
         else:
             vis.add_action("RGB", self.toggle_rgb)
             vis.add_action("Random Color", self.toggle_random_color)
@@ -161,6 +173,7 @@ class CallbackManager:
             vis.add_action("Toggle Number", self.toggle_numbers)
             vis.add_action("CLIP Query", self.query)
             vis.add_action("Pairwise Inspect", self.toggle_pairwise_inspect)
+            vis.add_action("View Segments", self.view)
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="visualizer")
