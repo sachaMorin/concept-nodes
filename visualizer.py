@@ -12,105 +12,104 @@ import copy
 log = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="visualizer")
-def main(cfg: DictConfig):
-    set_seed(cfg.seed)
-    map = load_map(cfg.map_path)
-    log.info(f"Loading map with a total of {len(map)} objects")
+class CallbackManager:
+    def __init__(self, map, ft_extractor):
+        self.map = map
+        self.ft_extractor = ft_extractor
 
-    # Geometries
-    pcd = map.pcd_o3d
-    bbox = map.oriented_bbox_o3d
-    centroids = map.centroids_o3d
+        # Geometries
+        self.pcd = map.pcd_o3d
+        self.bbox = map.oriented_bbox_o3d
+        self.centroids = map.centroids_o3d
 
-    # Colorings
-    og_colors = [o3d.utility.Vector3dVector(copy.deepcopy(p.colors)) for p in pcd]
-    sim_query = .5 * np.ones(len(pcd))
-    random_colors = np.random.rand(len(pcd), 3)
+        # Colorings
+        self.og_colors = [o3d.utility.Vector3dVector(copy.deepcopy(p.colors)) for p in self.pcd]
+        self.sim_query = .5 * np.ones(len(self.pcd))
+        self.random_colors = np.random.rand(len(self.pcd), 3)
 
-    # Similarities
-    ft_extractor = hydra.utils.instantiate(cfg.ft_extraction)
-    map.semantic_tensor = map.semantic_tensor.to(ft_extractor.device)
-    similarity_cb = map.similarity
-    self_semantic_sim = similarity_cb.semantic_similarity(map.semantic_tensor, map.semantic_tensor)
-    self_geometric_sim = similarity_cb.geometric_similarity(map.geometry_tensor, map.geometry_tensor)
+        # Color centroids
+        for c, color in zip(self.centroids, self.random_colors):
+            c.paint_uniform_color(color)
 
-    # Visualizer
-    vis = o3d.visualization.VisualizerWithKeyCallback()
-    vis.create_window(window_name=f'Open3D', width=1280, height=720)
+        # Similarities
+        self.map.semantic_tensor = map.semantic_tensor.to(ft_extractor.device)
+        self.self_semantic_sim = self.map.similarity.semantic_similarity(map.semantic_tensor, map.semantic_tensor)
+        self.self_geometric_sim = self.map.similarity.geometric_similarity(map.geometry_tensor, map.geometry_tensor)
 
-    for geometry in pcd + centroids:
-        vis.add_geometry(geometry)
+        # Toggles
+        self.bbox_toggle = False
+        self.centroid_toggle = False
 
-    # Bbox
-    bbox_toggle = False
+    def add_geometries(self, vis):
+        for geometry in self.pcd:
+            vis.add_geometry(geometry)
 
-    def toggle_bbox(vis):
-        nonlocal bbox_toggle
-        bbox_toggle = not bbox_toggle
-        if bbox_toggle:
-            for geometry in bbox:
+    def toggle_bbox(self, vis):
+        if not self.bbox_toggle:
+            for geometry in self.bbox:
                 vis.add_geometry(geometry, reset_bounding_box=False)
         else:
-            for geometry in bbox:
+            for geometry in self.bbox:
                 vis.remove_geometry(geometry, reset_bounding_box=False)
+        self.bbox_toggle = not self.bbox_toggle
 
-    # Colorings
-    def toggle_sim(vis):
-        nonlocal sim_query
-        rgb = similarities_to_rgb(sim_query, cmap_name="viridis")
-        for p, c, color in zip(pcd, centroids, rgb):
-            p.paint_uniform_color(np.array(color)/255)
-            c.paint_uniform_color(np.array(color)/255)
+    def toggle_centroids(self, vis):
+        if not self.centroid_toggle:
+            for geometry in self.centroids:
+                vis.add_geometry(geometry, reset_bounding_box=False)
+        else:
+            for geometry in self.centroids:
+                vis.remove_geometry(geometry, reset_bounding_box=False)
+        self.centroid_toggle = not self.centroid_toggle
+
+    def toggle_sim(self, vis):
+        rgb = similarities_to_rgb(self.sim_query, cmap_name="viridis")
+        for p, c, color in zip(self.pcd, self.centroids, rgb):
+            p.paint_uniform_color(np.array(color) / 255)
+            c.paint_uniform_color(np.array(color) / 255)
             vis.update_geometry(p)
-            vis.update_geometry(c)
+            if self.centroid_toggle:
+                vis.update_geometry(c)
         vis.poll_events()
         vis.update_renderer()
 
-    def toggle_random_color(vis):
-        nonlocal random_colors
-        for p, c, color in zip(pcd, centroids, random_colors):
+    def toggle_random_color(self, vis):
+        for p, c, color in zip(self.pcd, self.centroids, self.random_colors):
             p.paint_uniform_color(color)
             c.paint_uniform_color(color)
             vis.update_geometry(p)
-            vis.update_geometry(c)
+            if self.centroid_toggle:
+                vis.update_geometry(c)
         vis.poll_events()
         vis.update_renderer()
 
-    def toggle_rgb(vis):
-        nonlocal og_colors
-        for p, c in zip(pcd, og_colors):
+    def toggle_rgb(self, vis):
+        for p, c in zip(self.pcd, self.og_colors):
             p.colors = c
             vis.update_geometry(p)
         vis.poll_events()
         vis.update_renderer()
 
-    # Text query
-    def query(vis):
-        nonlocal ft_extractor
-        nonlocal sim_query
-        nonlocal similarity_cb
+    def query(self, vis):
         query = input("Enter query: ")
-        query_ft = ft_extractor.encode_text([query])
-        sim_query = similarity_cb.semantic_similarity(map.semantic_tensor.float(), query_ft)
-        sim_query = sim_query.squeeze().cpu().numpy()
+        query_ft = self.ft_extractor.encode_text([query])
+        self.sim_query = self.map.similarity.semantic_similarity(self.map.semantic_tensor.float(), query_ft)
+        self.sim_query = self.sim_query.squeeze().cpu().numpy()
         # # Calling toggle_sim(vis) is buggy so we just update colors here directly
-        rgb = similarities_to_rgb(sim_query, cmap_name="viridis")
-        for p, c, color in zip(pcd, centroids, rgb):
-            p.paint_uniform_color(np.array(color)/255)
-            c.paint_uniform_color(np.array(color)/255)
+        rgb = similarities_to_rgb(self.sim_query, cmap_name="viridis")
+        for p, c, color in zip(self.pcd, self.centroids, rgb):
+            p.paint_uniform_color(np.array(color) / 255)
+            c.paint_uniform_color(np.array(color) / 255)
             vis.update_geometry(p)
-            vis.update_geometry(c)
+            if self.centroid_toggle:
+                vis.update_geometry(c)
         vis.update_renderer()
 
-    def toggle_inspect(vis):
-        nonlocal random_colors
-        nonlocal self_geometric_sim
-        nonlocal self_semantic_sim
+    def toggle_inspect(self, vis):
         obj1 = input("First Object Id: ")
         obj2 = input("Second Object Id: ")
         obj1, obj2 = int(obj1), int(obj2)
-        for i, (p, c, color) in enumerate(zip(pcd, centroids, random_colors)):
+        for i, (p, c, color) in enumerate(zip(self.pcd, self.centroids, self.random_colors)):
             if i == obj1 or i == obj2:
                 p.paint_uniform_color(color)
                 c.paint_uniform_color(color)
@@ -118,22 +117,43 @@ def main(cfg: DictConfig):
                 p.paint_uniform_color([0, 0, 0])
                 c.paint_uniform_color([0, 0, 0])
             vis.update_geometry(p)
-            vis.update_geometry(c)
-        log.info(print(f"Object {obj1}: {map[obj1]}"))
-        log.info(print(f"Object {obj2}: {map[obj2]}"))
-        log.info(f"Geometric Similarity: {self_geometric_sim[obj1, obj2]}")
-        log.info(f"Semantic Similarity: {self_semantic_sim[obj1, obj2]}")
+            if self.centroid_toggle:
+                vis.update_geometry(c)
+        log.info(print(f"Object {obj1}: {self.map[obj1]}"))
+        log.info(print(f"Object {obj2}: {self.map[obj2]}"))
+        log.info(f"Geometric Similarity: {self.self_geometric_sim[obj1, obj2]}")
+        log.info(f"Semantic Similarity: {self.self_semantic_sim[obj1, obj2]}")
         vis.poll_events()
         vis.update_renderer()
 
-    vis.register_key_callback(ord("B"), toggle_bbox)
-    vis.register_key_callback(ord("S"), toggle_sim)
-    vis.register_key_callback(ord("R"), toggle_rgb)
-    vis.register_key_callback(ord("Z"), toggle_random_color)
-    vis.register_key_callback(ord("Q"), query)
-    vis.register_key_callback(ord("I"), toggle_inspect)
+    def register_callbacks(self, vis):
+        vis.register_key_callback(ord("B"), self.toggle_bbox)
+        vis.register_key_callback(ord("C"), self.toggle_centroids)
+        vis.register_key_callback(ord("S"), self.toggle_sim)
+        vis.register_key_callback(ord("R"), self.toggle_rgb)
+        vis.register_key_callback(ord("Z"), self.toggle_random_color)
+        vis.register_key_callback(ord("Q"), self.query)
+        vis.register_key_callback(ord("I"), self.toggle_inspect)
+
+
+@hydra.main(version_base=None, config_path="conf", config_name="visualizer")
+def main(cfg: DictConfig):
+    set_seed(cfg.seed)
+    map = load_map(cfg.map_path)
+    log.info(f"Loading map with a total of {len(map)} objects")
+    ft_extractor = hydra.utils.instantiate(cfg.ft_extraction)
+
+    # Callback Manager
+    manager = CallbackManager(map, ft_extractor)
+
+    # Visualizer
+    vis = o3d.visualization.VisualizerWithKeyCallback()
+    vis.create_window(window_name=f'Open3D', width=1280, height=720)
+
+    manager.add_geometries(vis)
+    manager.register_callbacks(vis)
     vis.run()
+
 
 if __name__ == "__main__":
     main()
-
