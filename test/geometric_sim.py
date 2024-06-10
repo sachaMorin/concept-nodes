@@ -25,13 +25,13 @@ while half_sphere.shape[0] < 100:
 half_sphere = half_sphere[:100]
 
 
-sim = RadiusOverlap(eps=.3, agg="mean")
+sim = RadiusOverlap(eps=0.3, agg="mean")
 
 print(sim(s1, s1))
 print(sim(s1, s2))
 print(sim(s1, half_sphere))
 
-sim = RadiusOverlap(eps=.3, agg="max")
+sim = RadiusOverlap(eps=0.3, agg="max")
 
 print(sim(s1, s1))
 print(sim(s1, s2))

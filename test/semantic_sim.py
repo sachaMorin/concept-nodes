@@ -32,4 +32,3 @@ map2 /= map2.norm(dim=1, keepdim=True)
 
 print(map1 @ map1.t())
 print(map1 @ map2.t())
-

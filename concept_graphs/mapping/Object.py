@@ -8,20 +8,20 @@ from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 
 class Object:
     def __init__(
-            self,
-            score: float,
-            rgb: np.ndarray,
-            mask: np.ndarray,
-            semantic_ft: np.ndarray,
-            camera_pose: np.ndarray,
-            pcd_points: np.ndarray,
-            pcd_rgb: np.ndarray,
-            segment_heap_size: int,
-            geometry_mode: str,
-            semantic_mode: str,
-            n_sample_pcd: int = 20,
-            denoising_callback: Union[PointCloudCallback, None] = None,
-            downsampling_callback: Union[PointCloudCallback, None] = None,
+        self,
+        score: float,
+        rgb: np.ndarray,
+        mask: np.ndarray,
+        semantic_ft: np.ndarray,
+        camera_pose: np.ndarray,
+        pcd_points: np.ndarray,
+        pcd_rgb: np.ndarray,
+        segment_heap_size: int,
+        geometry_mode: str,
+        semantic_mode: str,
+        n_sample_pcd: int = 20,
+        denoising_callback: Union[PointCloudCallback, None] = None,
+        downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
@@ -88,10 +88,14 @@ class Object:
 
             if n_points < self.n_sample_pcd:
                 # Sample n_sample_pcd - n_points points with replacement
-                idx = np.random.choice(n_points, self.n_sample_pcd - n_points, replace=True)
+                idx = np.random.choice(
+                    n_points, self.n_sample_pcd - n_points, replace=True
+                )
                 self.geometry = np.concatenate([points, points[idx]], axis=0)
             else:
-                self.geometry = points[np.random.choice(n_points, self.n_sample_pcd, replace=False)]
+                self.geometry = points[
+                    np.random.choice(n_points, self.n_sample_pcd, replace=False)
+                ]
         else:
             raise ValueError(f"Invalid geometry mode {self.geometry_mode}.")
 
@@ -105,10 +109,12 @@ class Object:
             self.semantic_ft = mean / np.linalg.norm(mean, 2)
         elif self.semantic_mode == "multi":
             if len(ft) < self.segment_heap_size:
-                self.semantic_ft = np.concatenate([ft, np.zeros((self.segment_heap_size - len(ft), ft.shape[1]))], axis=0)
+                self.semantic_ft = np.concatenate(
+                    [ft, np.zeros((self.segment_heap_size - len(ft), ft.shape[1]))],
+                    axis=0,
+                )
             else:
                 self.semantic_ft = ft
-
 
     def collate(self):
         if not self.is_collated:

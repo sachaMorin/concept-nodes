@@ -18,13 +18,13 @@ from .utils import get_grid_coords, bbox_area
 
 class YoloMobileSAM(SegmentationModel):
     def __init__(
-            self,
-            yolo_checkpoint_path: str,
-            yolo_class_path: str,
-            yolo_device: str,
-            sam_model_type: str,
-            sam_checkpoint_path: str,
-            sam_device: str,
+        self,
+        yolo_checkpoint_path: str,
+        yolo_class_path: str,
+        yolo_device: str,
+        sam_model_type: str,
+        sam_checkpoint_path: str,
+        sam_device: str,
     ):
         self.yolo_checkpoint_path = yolo_checkpoint_path
         self.yolo_class_path = yolo_class_path
@@ -50,7 +50,7 @@ class YoloMobileSAM(SegmentationModel):
         self.sam_predictor = SamPredictor(mobile_sam)
 
     def __call__(
-            self, img: np.ndarray
+        self, img: np.ndarray
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         with torch.no_grad():
             img_bgr = img[..., ::-1].copy()
@@ -58,8 +58,12 @@ class YoloMobileSAM(SegmentationModel):
 
             bbox = yolo_output[0].boxes.xyxy.cpu().numpy()
 
-            bbox_transformed = self.sam_predictor.transform.apply_boxes(bbox, original_size=img.shape[:2])
-            bbox_transformed = torch.from_numpy(bbox_transformed).to(torch.int).to(self.sam_device)
+            bbox_transformed = self.sam_predictor.transform.apply_boxes(
+                bbox, original_size=img.shape[:2]
+            )
+            bbox_transformed = (
+                torch.from_numpy(bbox_transformed).to(torch.int).to(self.sam_device)
+            )
 
             self.sam_predictor.set_image(img)
             masks, iou_predictions, _ = self.sam_predictor.predict_torch(
@@ -71,7 +75,9 @@ class YoloMobileSAM(SegmentationModel):
 
             best = torch.argmax(iou_predictions, dim=1)
             masks = masks[torch.arange(masks.size(0)), best]
-            iou_predictions = iou_predictions[torch.arange(iou_predictions.size(0)), best]
+            iou_predictions = iou_predictions[
+                torch.arange(iou_predictions.size(0)), best
+            ]
             bbox = torch.from_numpy(bbox).to(torch.int)
 
         # from concept_graphs.viz.segmentation import plot_segments

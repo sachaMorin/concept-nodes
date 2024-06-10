@@ -3,7 +3,9 @@ from .Similarity import GeometricSimilarity
 
 
 class CentroidDist(GeometricSimilarity):
-    def __call__(self, main_centroid: torch.Tensor, other_centroid: torch.Tensor) -> torch.Tensor:
+    def __call__(
+        self, main_centroid: torch.Tensor, other_centroid: torch.Tensor
+    ) -> torch.Tensor:
         dist = torch.norm(main_centroid - other_centroid, dim=1)
         return 1 / (dist + 1e-6)
 
@@ -12,7 +14,9 @@ class ChamferDist(GeometricSimilarity):
     def __init__(self, agg: str):
         self.agg = agg
 
-    def __call__(self, main_geometry: torch.Tensor, other_geometry: torch.Tensor) -> torch.Tensor:
+    def __call__(
+        self, main_geometry: torch.Tensor, other_geometry: torch.Tensor
+    ) -> torch.Tensor:
         if main_geometry.ndim == 2:
             main_geometry = main_geometry.unsqueeze(0)
         if other_geometry.ndim == 2:
@@ -42,7 +46,9 @@ class RadiusOverlap(GeometricSimilarity):
         self.eps = eps
         self.agg = agg
 
-    def __call__(self, main_geometry: torch.Tensor, other_geometry: torch.Tensor) -> torch.Tensor:
+    def __call__(
+        self, main_geometry: torch.Tensor, other_geometry: torch.Tensor
+    ) -> torch.Tensor:
         if main_geometry.ndim == 2:
             main_geometry = main_geometry.unsqueeze(0)
         if other_geometry.ndim == 2:
@@ -62,7 +68,7 @@ class RadiusOverlap(GeometricSimilarity):
         if self.agg == "sum":
             result = d1 + d2
         elif self.agg == "mean":
-                result = (d1 + d2)/2
+            result = (d1 + d2) / 2
         elif self.agg == "max":
             result = torch.max(d1, d2)
         else:

@@ -3,7 +3,12 @@ import numpy as np
 from .ft_extraction.FeatureExtractor import FeatureExtractor
 from .segmentation.SegmentationModel import SegmentationModel
 from .rgbd_to_pcd import rgbd_to_object_pcd
-from .segmentation.utils import extract_rgb_crops, extract_mask_crops, safe_bbox_inflate, mask_subtract_contained
+from .segmentation.utils import (
+    extract_rgb_crops,
+    extract_mask_crops,
+    safe_bbox_inflate,
+    mask_subtract_contained,
+)
 
 
 class PerceptionPipeline:

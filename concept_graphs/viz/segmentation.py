@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 import textwrap
 from .utils import similarities_to_rgb
 
+
 def wrap_text(text, max_length=30):
     return "\n".join(textwrap.wrap(text, max_length))
+
 
 def plot_grid_images(
     images: List[Union[np.ndarray, torch.Tensor]],
@@ -38,7 +40,7 @@ def plot_grid_images(
         else:
             ax.axis("off")
     if title:
-        plt.suptitle(wrap_text(title, 30), fontsize=32)
+        plt.suptitle(wrap_text(title, 40), fontsize=32)
     plt.tight_layout()
 
 

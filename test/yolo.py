@@ -9,7 +9,9 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 # Load classes in txt file. Each class is a string on a new line
-with open("/home/sacha/Documents/cg-plus/model_checkpoints/scannet200_classes.txt", "r") as f:
+with open(
+    "/home/sacha/Documents/cg-plus/model_checkpoints/scannet200_classes.txt", "r"
+) as f:
     classes = f.read().splitlines()
 
 # Load test image
@@ -24,13 +26,16 @@ model.set_classes(classes)
 model.to("cpu")
 
 import time
+
 start = time.time()
 for _ in range(1000):
     output = model.predict(img)
 stop = time.time()
 # Print fps
 print(1000 / (stop - start))
-import pdb; pdb.set_trace()
+import pdb
+
+pdb.set_trace()
 
 bbox = output[0].boxes.xyxy.cpu().numpy()
 

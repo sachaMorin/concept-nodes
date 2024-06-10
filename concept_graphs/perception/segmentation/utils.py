@@ -82,7 +82,7 @@ def extract_mask_crops(masks: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
 
 
 def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7):
-    '''
+    """
     Compute the containing relationship between all pair of bounding boxes.
     For each mask, subtract the mask of bounding boxes that are contained by it.
 
@@ -96,7 +96,7 @@ def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7
 
     Returns:
         mask_sub: (N, H, W), binary mask
-    '''
+    """
     N = xyxy.shape[0]  # number of boxes
 
     # Get areas of each xyxy
@@ -104,9 +104,13 @@ def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7
 
     # Compute intersection boxes
     lt = np.maximum(xyxy[:, None, :2], xyxy[None, :, :2])  # left-top points (N, N, 2)
-    rb = np.minimum(xyxy[:, None, 2:], xyxy[None, :, 2:])  # right-bottom points (N, N, 2)
+    rb = np.minimum(
+        xyxy[:, None, 2:], xyxy[None, :, 2:]
+    )  # right-bottom points (N, N, 2)
 
-    inter = (rb - lt).clip(min=0)  # intersection sizes (dx, dy), if no overlap, clamp to zero (N, N, 2)
+    inter = (rb - lt).clip(
+        min=0
+    )  # intersection sizes (dx, dy), if no overlap, clamp to zero (N, N, 2)
 
     # Compute areas of intersection boxes
     inter_areas = inter[:, :, 0] * inter[:, :, 1]  # (N, N)
@@ -124,6 +128,8 @@ def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7
     mask_sub = mask.copy()  # (N, H, W)
     # mask_sub[contained_idx[0]] = mask_sub[contained_idx[0]] & (~mask_sub[contained_idx[1]])
     for i in range(len(contained_idx[0])):
-        mask_sub[contained_idx[0][i]] = mask_sub[contained_idx[0][i]] & (~mask_sub[contained_idx[1][i]])
+        mask_sub[contained_idx[0][i]] = mask_sub[contained_idx[0][i]] & (
+            ~mask_sub[contained_idx[1][i]]
+        )
 
     return mask_sub

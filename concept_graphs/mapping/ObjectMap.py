@@ -203,7 +203,10 @@ class ObjectMap:
     def check_processing(self):
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
-        if self.collate_objects_every > 0 and self.n_updates % self.collate_objects_every == 0:
+        if (
+            self.collate_objects_every > 0
+            and self.n_updates % self.collate_objects_every == 0
+        ):
             self.collate_objects()
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
             self.self_merge()

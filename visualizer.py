@@ -33,8 +33,10 @@ class CallbackManager:
         self.label_coord = [o.centroid for o in map]
 
         # Colorings
-        self.og_colors = [o3d.utility.Vector3dVector(copy.deepcopy(p.colors)) for p in self.pcd]
-        self.sim_query = .5 * np.ones(len(self.pcd))
+        self.og_colors = [
+            o3d.utility.Vector3dVector(copy.deepcopy(p.colors)) for p in self.pcd
+        ]
+        self.sim_query = 0.5 * np.ones(len(self.pcd))
         self.random_colors = np.random.rand(len(self.pcd), 3)
 
         # Color centroids
@@ -43,8 +45,12 @@ class CallbackManager:
 
         # Similarities
         self.map.semantic_tensor = map.semantic_tensor.to(ft_extractor.device)
-        self.self_semantic_sim = self.map.similarity.semantic_similarity(map.semantic_tensor, map.semantic_tensor)
-        self.self_geometric_sim = self.map.similarity.geometric_similarity(map.geometry_tensor, map.geometry_tensor)
+        self.self_semantic_sim = self.map.similarity.semantic_similarity(
+            map.semantic_tensor, map.semantic_tensor
+        )
+        self.self_geometric_sim = self.map.similarity.geometric_similarity(
+            map.geometry_tensor, map.geometry_tensor
+        )
 
         # Toggles
         self.bbox_toggle = False
@@ -122,7 +128,9 @@ class CallbackManager:
     def query(self, vis):
         query = input("Enter query: ")
         query_ft = self.ft_extractor.encode_text([query])
-        self.sim_query = self.map.similarity.semantic_similarity(self.map.semantic_tensor.float(), query_ft)
+        self.sim_query = self.map.similarity.semantic_similarity(
+            self.map.semantic_tensor.float(), query_ft
+        )
         self.sim_query = self.sim_query.squeeze().cpu().numpy()
         self.toggle_sim(vis)
 
@@ -130,7 +138,9 @@ class CallbackManager:
         obj1 = input("First Object Id: ")
         obj2 = input("Second Object Id: ")
         obj1, obj2 = int(obj1), int(obj2)
-        for i, (p, c, color) in enumerate(zip(self.pcd, self.centroids, self.random_colors)):
+        for i, (p, c, color) in enumerate(
+            zip(self.pcd, self.centroids, self.random_colors)
+        ):
             if i == obj1 or i == obj2:
                 p.paint_uniform_color(color)
                 c.paint_uniform_color(color)
@@ -189,7 +199,7 @@ def main(cfg: DictConfig):
     # Visualizer
     if cfg.mode == "keycallback":
         vis = o3d.visualization.VisualizerWithKeyCallback()
-        vis.create_window(window_name=f'Open3D', width=1280, height=720)
+        vis.create_window(window_name=f"Open3D", width=1280, height=720)
 
         manager.add_geometries(vis, manager.pcd_names, manager.pcd)
         manager.register_callbacks(vis)
@@ -197,7 +207,6 @@ def main(cfg: DictConfig):
     elif cfg.mode == "gui":
         app = gui.Application.instance
         app.initialize()
-
 
         vis = o3d.visualization.O3DVisualizer("Open3D - 3D Text", 1024, 768)
         vis.set_background([1.0, 1.0, 1.0, 1.0], bg_image=None)
