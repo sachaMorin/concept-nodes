@@ -30,7 +30,7 @@ output_dir: ??? # Where to save outputs
 Download the following to ```cache_dir```, as defined in your config.
  * [mobile_sam.pt](https://github.com/ultralytics/assets/releases/download/v8.2.0/mobile_sam.pt)
  * [yolov8s-world.pt](https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8s-world.pt)
- * [scannet200_classes.txt](https://github.com/concept-graphs/concept-graphs/blob/66175d63f466d264edce9f1fb6987c5ba1dcac0e/conceptgraph/scannet200_classes.txt)
+ * [scannet200_classes.txt](https://raw.githubusercontent.com/concept-graphs/concept-graphs/66175d63f466d264edce9f1fb6987c5ba1dcac0e/conceptgraph/scannet200_classes.txt)
 
 ## Data
 You can download the Replica dataset to `data_dir` using the 
