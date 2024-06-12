@@ -3,7 +3,7 @@ defaults:
   - base
   - /dataset: Replica
   - /ft_extraction: CLIP
-  - /vlm: OpenAICaptioner
+#  - /vlm: OpenAICaptioner
   - override /segmentation: YoloMobileSAM
   - _self_
 

@@ -45,7 +45,7 @@ To run the experiment defined in `conf/experiments/replica.yaml`, run:
 
 
 ```bash
-pyhon3 main.py experiment=replica
+python3 main.py experiment=replica
 ```
 The map and other assets will be saved to `output_dir`. `main.py` will also create
 a symlink to the latest output in `output_dir/latest_map.pkl`.
@@ -54,12 +54,12 @@ a symlink to the latest output in `output_dir/latest_map.pkl`.
 
 To visualize the entire config, run:
 ```bash
-pyhon3 main.py experiment=replica --cfg job
+python3 main.py experiment=replica --cfg job
 ```
 You can override all parameters from the command line. For example, to run the same experiment using
 only Mobile-SAM on the first 100 frames, run:
 ```bash
-pyhon3 main.py experiment=replica segmentation=GridMobileSAM dataset.sequence_end=100
+python3 main.py experiment=replica segmentation=GridMobileSAM dataset.sequence_end=100
 ```
 
 ## Visualizer
