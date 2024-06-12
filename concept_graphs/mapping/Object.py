@@ -156,6 +156,7 @@ class Object:
 
     def view_images_caption(self):
         from ..viz.segmentation import plot_grid_images
+
         rgb_crops = [v.rgb for v in self.segments]
         plot_grid_images(rgb_crops, None, grid_width=3, title=self.caption)
 

@@ -19,7 +19,7 @@ class OpenAICaptioner(ImageCaptioner):
             "You will be provided with multiple views of the same object. "
         )
         if white_bg:
-            self.role +=  (
+            self.role += (
                 "The background has been whited out to focus on the object. "
                 "Some foreground objects may also have been removed. Describe the object only."
             )
