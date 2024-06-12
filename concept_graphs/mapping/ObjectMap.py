@@ -219,11 +219,9 @@ class ObjectMap:
 
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt
-        from ..viz.segmentation import plot_grid_images
 
         for i, obj in enumerate(self):
-            rgb_crops = [v.rgb for v in obj.segments]
-            plot_grid_images(rgb_crops, None, grid_width=3, title=obj.caption)
+            obj.view_images_caption()
             plt.savefig(f"{save_dir}/{i}.png")
             plt.close()
 

@@ -159,9 +159,7 @@ class CallbackManager:
         obj_id = input("Object Id: ")
         obj_id = int(obj_id)
         obj = self.map[obj_id]
-
-        rgb_crops = [v.rgb for v in obj.segments]
-        plot_grid_images(rgb_crops, None, grid_width=3, title=obj.caption)
+        obj.view_images_caption()
         plt.show()
 
     def register_callbacks(self, vis):

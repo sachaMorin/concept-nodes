@@ -9,17 +9,21 @@ log = logging.getLogger(__name__)
 
 
 class OpenAICaptioner(ImageCaptioner):
-    def __init__(self, max_images: int, model: str = "gpt-4o"):
+    def __init__(self, max_images: int, model: str = "gpt-4o", white_bg: bool = False):
         super().__init__(max_images)
         self.model = model
         self.client = openai.OpenAI()
+        self.white_bg = white_bg
         self.role = (
             "You are a helpful assistant that describes images in a few words. "
             "You will be provided with multiple views of the same object. "
-            "The background has been whited out to focus on the object. "
-            "Some foreground objects may also have been removed. Describe the object only."
-            "Begin response with 'The object is'."
         )
+        if white_bg:
+            self.role +=  (
+                "The background has been whited out to focus on the object. "
+                "Some foreground objects may also have been removed. Describe the object only."
+            )
+        self.role += "Begin response with 'The object is'."
 
     def encode_images(self, images: [np.ndarray]) -> [str]:
         # To RGB
