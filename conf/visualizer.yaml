@@ -1,8 +1,8 @@
 defaults:
   - ft_extraction: CLIP
+  - paths: paths
   - _self_
 
-map_path: /home/sacha/Documents/cg-plus/outputs/latest_map.pkl
-cache_dir:  /home/sacha/Documents/cg-plus/model_checkpoints
+map_path: ${output_dir}/latest_map.pkl
 seed: 42
 mode: "gui"

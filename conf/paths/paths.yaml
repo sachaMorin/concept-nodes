@@ -1,0 +1,3 @@
+# @package _global_
+cache_dir: ??? # Where to save model checkpoints and other assets
+output_dir: ??? # Where to save outputs

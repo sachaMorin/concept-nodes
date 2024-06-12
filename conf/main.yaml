@@ -1,10 +1,9 @@
 defaults:
   - experiment: ???
+  - paths: paths
   - _self_
 
 name: ???
-cache_dir: /home/sacha/Documents/cg-plus/model_checkpoints
-output_dir: /home/sacha/Documents/cg-plus/outputs
 save_map: true
 seed: 123
 
