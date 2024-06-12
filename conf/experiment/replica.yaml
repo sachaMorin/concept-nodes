@@ -7,10 +7,9 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-name: replica_yolo
+name: replica
 
 dataset:
-  base_path: /home/sacha/Downloads/Replica
   sequence_stride: 5
   resized_width: 600
   resized_height: 340

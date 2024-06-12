@@ -1,5 +1,5 @@
 _target_: rgbd_dataset.rgbd_dataset.datasets.Replica.Replica
-base_path: ???
+base_path: ${data_dir}/Replica
 scene: room0
 width: 1200
 height: 680

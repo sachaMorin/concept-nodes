@@ -61,7 +61,7 @@ def main(cfg: DictConfig):
         captioner = hydra.utils.instantiate(cfg.vlm)
         main_map.caption_objects(captioner)
 
-    main_map.draw_geometries(random_colors=False)
+    # main_map.draw_geometries(random_colors=False)
 
     # Save visualizations and map
     if not cfg.save_map:

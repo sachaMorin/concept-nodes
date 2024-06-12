@@ -1,3 +1,4 @@
 # @package _global_
 cache_dir: ??? # Where to save model checkpoints and other assets
+data_dir: ??? # Where to look for datasets by default
 output_dir: ??? # Where to save outputs
