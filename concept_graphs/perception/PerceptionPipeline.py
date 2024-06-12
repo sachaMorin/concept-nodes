@@ -65,7 +65,9 @@ class PerceptionPipeline:
         # Segment filtering
         areas = masks.sum(axis=-1).sum(axis=-1)
         keep = areas > self.min_mask_area_px
-        masks, bbox, scores = masks[keep], bbox[keep], scores[keep]
+
+        # Use areas as scores
+        masks, bbox, scores = masks[keep], bbox[keep], areas[keep]
 
         mask_crops = extract_mask_crops(masks, bbox)
         rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops, self.crop_bg_color)
