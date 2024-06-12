@@ -4,6 +4,7 @@ ft_extractor: ???
 depth_trunc: 8.0
 inflate_bbox_px: 10
 mask_subtract_contained: true
+min_mask_area_px: 25
 bg_classes:
   - wall
   - floor

@@ -23,6 +23,7 @@ class PerceptionPipeline:
         bg_classes: Union[List[str], None] = None,
         bg_sim_thresh: float = 1.0,
         crop_bg_color: Union[int, None] = None,
+        min_mask_area_px: int = 25,
     ):
         self.segmentation_model = segmentation_model
         self.ft_extractor = ft_extractor
@@ -33,6 +34,8 @@ class PerceptionPipeline:
         self.semantic_similarity = semantic_similarity
         self.bg_classes = bg_classes
         self.bg_sim_thresh = bg_sim_thresh
+        self.min_mask_area_px = min_mask_area_px
+
         self.bg_features = None
 
         # Compute features for bg_class
@@ -58,6 +61,11 @@ class PerceptionPipeline:
 
         if self.mask_subtract_contained:
             masks = mask_subtract_contained(bbox, masks)
+
+        # Segment filtering
+        areas = masks.sum(axis=-1).sum(axis=-1)
+        keep = areas > self.min_mask_area_px
+        masks, bbox, scores = masks[keep], bbox[keep], scores[keep]
 
         mask_crops = extract_mask_crops(masks, bbox)
         rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops, self.crop_bg_color)
