@@ -51,6 +51,7 @@ def main(cfg: DictConfig):
     main_map.filter_min_segments()
     main_map.collate_objects()
     main_map.self_merge()
+    main_map.denoise_objects()
 
     stop = time.time()
     log.info("Objects in final map: %d" % len(main_map))

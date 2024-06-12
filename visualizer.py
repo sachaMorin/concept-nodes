@@ -48,6 +48,7 @@ class CallbackManager:
         self.self_semantic_sim = self.map.similarity.semantic_similarity(
             map.semantic_tensor, map.semantic_tensor
         )
+        self.map.geometry_tensor = map.geometry_tensor.to(ft_extractor.device)
         self.self_geometric_sim = self.map.similarity.geometric_similarity(
             map.geometry_tensor, map.geometry_tensor
         )

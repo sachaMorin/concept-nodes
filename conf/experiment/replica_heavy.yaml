@@ -1,0 +1,13 @@
+# @package _global_
+defaults:
+  - replica
+
+dataset:
+  sequence_stride: 5
+  resized_width: -1
+  resized_height: -1
+
+mapping:
+  object_factory:
+    n_sample_pcd: 200
+  device: cuda

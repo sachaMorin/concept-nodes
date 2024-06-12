@@ -16,22 +16,22 @@ dataset:
 
 perception:
   bg_sim_thresh: 0.61
-  crop_bg_color: 255
+  crop_bg_color: null
 
 mapping:
   similarity:
     geometric_similarity:
-      eps: 0.1
+      eps: 0.08
     semantic_similarity:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
-      agg: max
-    geometric_sim_thresh: .6
-    semantic_sim_thresh: .85
+      agg: mean
+    geometric_sim_thresh: .35
+    semantic_sim_thresh: .5
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
     n_sample_pcd: 80
   min_segments: 3
-  filter_min_every: 50
+  filter_min_every: 25
   collate_objects_every: 5
   device: cpu

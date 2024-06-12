@@ -200,6 +200,10 @@ class ObjectMap:
         for obj in self:
             obj.collate()
 
+    def denoise_objects(self):
+        for obj in self:
+            obj.denoise()
+
     def check_processing(self):
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
