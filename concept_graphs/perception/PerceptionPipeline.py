@@ -70,9 +70,10 @@ class PerceptionPipeline:
         masks, bbox, scores = masks[keep], bbox[keep], areas[keep]
 
         mask_crops = extract_mask_crops(masks, bbox)
-        rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops, self.crop_bg_color)
+        rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops)
+        rgb_crops_bg = extract_rgb_crops(rgb, bbox, mask_crops, self.crop_bg_color)
 
-        features = self.ft_extractor(rgb_crops)
+        features = self.ft_extractor(rgb_crops_bg)
 
         if self.bg_features is not None:
             sim = self.semantic_similarity(features, self.bg_features)
