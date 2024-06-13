@@ -19,6 +19,7 @@ class Object:
         segment_heap_size: int,
         geometry_mode: str,
         semantic_mode: str,
+        timestep_created: int,
         n_sample_pcd: int = 20,
         denoising_callback: Union[PointCloudCallback, None] = None,
         downsampling_callback: Union[PointCloudCallback, None] = None,
@@ -26,6 +27,7 @@ class Object:
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
         self.geometry_mode = geometry_mode
+        self.timestep_created = timestep_created
         self.n_sample_pcd = n_sample_pcd
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
@@ -135,6 +137,7 @@ class Object:
     def __iadd__(self, other):
         segment_added = self.segments.extend(other.segments)
         self.n_segments += other.n_segments
+        self.timestep_created = min(self.timestep_created, other.timestep_created)
 
         if segment_added:
             self.is_collated = False

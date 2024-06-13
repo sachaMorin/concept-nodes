@@ -9,8 +9,9 @@ object_factory:
   segment_heap_size: 12
   geometry_mode: "pcd"
 
-min_segments: 4
 self_merge_every: 10
+n_min_segments: 3
+grace_min_segments: 30
 filter_min_every: -1
 collate_objects_every: 5
 

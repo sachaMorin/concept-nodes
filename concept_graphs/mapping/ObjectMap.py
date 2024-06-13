@@ -16,17 +16,19 @@ class ObjectMap:
     def __init__(
         self,
         similarity: Similarity,
-        min_segments: int,
         object_factory: ObjectFactory,
+        n_min_segments: int,
+        grace_min_segments: int,
         filter_min_every: int,
         collate_objects_every: int,
         self_merge_every: int,
         device: str = "cpu",
     ):
         self.similarity = similarity
-        self.min_segments = min_segments
-        self.object_factory = object_factory
+        self.n_min_segments = n_min_segments
+        self.grace_min_segments = grace_min_segments
         self.filter_min_every = filter_min_every
+        self.object_factory = object_factory
         self.collate_objects_every = collate_objects_every
         self.self_merge_every = self_merge_every
         self.device = device
@@ -132,6 +134,7 @@ class ObjectMap:
                     pcd_rgb=pcd_rgb[i],
                     camera_pose=camera_pose,
                     score=float(scores[i]),
+                    timestep_created=self.n_updates,
                 )
                 self.append(object)
 
@@ -158,6 +161,7 @@ class ObjectMap:
         merge, match_idx = self.match_similarities(other)
 
         for i, obj in enumerate(other):
+            obj.timestep_created = self.n_updates
             if merge[i]:
                 self[match_idx[i]] += obj
             else:
@@ -191,9 +195,9 @@ class ObjectMap:
         self.collate_objects()
         self.collate()
 
-    def filter_min_segments(self):
+    def filter_min_segments(self, grace: bool = True):
         self.objects = {
-            k: v for k, v in self.objects.items() if v.n_segments >= self.min_segments
+            k: v for k, v in self.objects.items() if (v.n_segments >= self.n_min_segments) or (grace and (self.n_updates - v.timestep_created < self.grace_min_segments))
         }
         self.collate()
 
