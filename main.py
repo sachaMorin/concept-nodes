@@ -50,10 +50,8 @@ def main(cfg: DictConfig):
 
     # Postprocessing
     main_map.filter_min_segments()
-    for _ in range(2):
-        main_map.collate_objects()
-        main_map.self_merge()
-    main_map.collate_objects()
+    main_map.self_merge()
+    main_map.self_merge()
     main_map.denoise_objects()
 
     stop = time.time()

@@ -188,6 +188,7 @@ class ObjectMap:
         for i in to_delete:
             self.pop(i)
 
+        self.collate_objects()
         self.collate()
 
     def filter_min_segments(self):
