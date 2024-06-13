@@ -109,10 +109,9 @@ class Object:
             self.semantic_ft = mean / np.linalg.norm(mean, 2)
         elif self.semantic_mode == "multi":
             if len(ft) < self.segment_heap_size:
-                self.semantic_ft = np.concatenate(
-                    [ft, np.zeros((self.segment_heap_size - len(ft), ft.shape[1]))],
-                    axis=0,
-                )
+                multiply = self.segment_heap_size // len(ft) + 1
+                self.semantic_ft = np.concatenate([ft] * multiply, axis=0)
+                self.semantic_ft = self.semantic_ft[: self.segment_heap_size]
             else:
                 self.semantic_ft = ft
 
