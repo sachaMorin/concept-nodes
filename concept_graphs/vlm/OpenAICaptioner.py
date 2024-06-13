@@ -33,6 +33,16 @@ class OpenAICaptioner(ImageCaptioner):
             for img in images
         ]
 
+    def postprocess_response(self, response: str) -> str:
+        # Check if it begins with "The object is"
+        if response.startswith("The object is"):
+            response = response[13:]
+
+        if response.endswith("."):
+            response = response[:-1]
+
+        return response
+
     def __call__(self, images: [np.ndarray]) -> str:
         if len(images) > self.max_images:
             # Subsample images
@@ -69,11 +79,4 @@ class OpenAICaptioner(ImageCaptioner):
             log.warning("Error: Could not generate caption")
             response = "Invalid"
 
-        # Check if it begins with "The object is"
-        if response.startswith("The object is"):
-            response = response[13:]
-
-        if response.endswith("."):
-            response = response[:-1]
-
-        return response
+        return self.postprocess_response(response)

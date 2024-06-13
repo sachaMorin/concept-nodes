@@ -1,0 +1,4 @@
+_target_: concept_graphs.vlm.OpenAITagger.OpenAITagger
+max_images: 5
+model: gpt-4o
+white_bg: false
