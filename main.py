@@ -48,9 +48,12 @@ def main(cfg: DictConfig):
         n_segments += len(local_map)
         progress_bar.set_postfix(objects=len(main_map), segments=n_segments)
 
+    # Postprocessing
     main_map.filter_min_segments()
+    for _ in range(2):
+        main_map.collate_objects()
+        main_map.self_merge()
     main_map.collate_objects()
-    main_map.self_merge()
     main_map.denoise_objects()
 
     stop = time.time()

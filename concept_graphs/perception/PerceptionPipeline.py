@@ -60,7 +60,7 @@ class PerceptionPipeline:
         )
 
         if self.mask_subtract_contained:
-            masks = mask_subtract_contained(bbox, masks)
+            masks = mask_subtract_contained(bbox, masks, 1.0, .1)
 
         # Segment filtering
         areas = masks.sum(axis=-1).sum(axis=-1)
