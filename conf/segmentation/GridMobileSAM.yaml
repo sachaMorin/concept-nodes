@@ -1,6 +1,6 @@
 _target_: concept_graphs.perception.segmentation.GridMobileSAM.GridMobileSAM
-grid_width: 10
-grid_height: 8
+grid_width: 12
+grid_height: 12
 grid_jitter: true
 model_type: "vit_t"
 checkpoint_path: ${cache_dir}/mobile_sam.pt
