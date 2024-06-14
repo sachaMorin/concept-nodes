@@ -46,28 +46,41 @@ class PerceptionPipeline:
     def __call__(
         self, rgb: np.ndarray, depth: np.ndarray, intrinsics: np.ndarray
     ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
-        masks, bbox, scores = self.segmentation_model(rgb)
+        masks, bbox, conf = self.segmentation_model(rgb)
+
+        # Penalty if original bbox touches image border
+        h, w = rgb.shape[:2]
+        touches_left = bbox[:, 0] <= 0
+        touches_right = bbox[:, 2] >= w - 1
+        touches_top = bbox[:, 1] <= 0
+        touches_bottom = bbox[:, 3] >= h - 1
+        touches_border = touches_left | touches_right | touches_top | touches_bottom
+        touches_border = touches_border.cpu().numpy()
 
         if self.inflate_bbox_px > 0:
             bbox = safe_bbox_inflate(
                 bbox, self.inflate_bbox_px, rgb.shape[1], rgb.shape[0]
             )
 
-        masks, bbox, scores = (
+        masks, bbox, conf = (
             masks.cpu().numpy(),
             bbox.cpu().numpy(),
-            scores.cpu().numpy(),
+            conf.cpu().numpy(),
         )
 
         if self.mask_subtract_contained:
             masks = mask_subtract_contained(bbox, masks)
 
-        # Segment filtering
         areas = masks.sum(axis=-1).sum(axis=-1)
-        keep = areas > self.min_mask_area_px
 
-        # Use areas as scores
-        masks, bbox, scores = masks[keep], bbox[keep], areas[keep]
+        # Choose scores and apply penalty
+        scores = areas
+        if touches_border.any():
+            scores[touches_border] = scores[touches_border] * .10
+
+        # Segment filtering
+        keep = areas > self.min_mask_area_px
+        masks, bbox, scores = masks[keep], bbox[keep], scores[keep]
 
         mask_crops = extract_mask_crops(masks, bbox)
         rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops)

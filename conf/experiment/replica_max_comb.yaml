@@ -20,14 +20,15 @@ perception:
 
 mapping:
   similarity:
-    _target_: concept_graphs.mapping.similarity.Similarity.Similarity
+    _target_: concept_graphs.mapping.similarity.Similarity.CombinedSimilarity
     geometric_similarity:
-      eps: 0.1
+      eps: 0.10
     semantic_similarity:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
       agg: max
-    geometric_sim_thresh: .5
-    semantic_sim_thresh: .85
+    geometric_sim_thresh: .1
+    semantic_sim_thresh: .1
+    sim_thresh: 0.7
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
