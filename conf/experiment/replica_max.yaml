@@ -1,0 +1,39 @@
+# @package _global_
+defaults:
+  - base
+  - /dataset: Replica
+  - /ft_extraction: CLIP
+#  - /vlm: OpenAICaptioner
+  - override /segmentation: YoloMobileSAM
+  - _self_
+
+name: replica_yolo
+
+dataset:
+  sequence_stride: 5
+  resized_width: 600
+  resized_height: 340
+
+perception:
+  bg_sim_thresh: 0.61
+  crop_bg_color: 255
+
+mapping:
+  similarity:
+    _target_: concept_graphs.mapping.similarity.Similarity.Similarity
+    geometric_similarity:
+      eps: 0.1
+    semantic_similarity:
+      _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
+      agg: max
+    geometric_sim_thresh: .6
+    semantic_sim_thresh: .85
+  object_factory:
+    semantic_mode: multi
+    geometry_mode: pcd
+    n_sample_pcd: 80
+  n_min_segments: 3
+  grace_min_segments: 30
+  filter_min_every: 10
+  collate_objects_every: 5
+  device: cpu

@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - replica
+  - replica_max
 
 dataset:
   sequence_stride: 5
