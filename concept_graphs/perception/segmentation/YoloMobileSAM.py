@@ -1,3 +1,6 @@
+import os
+
+from pathlib import Path
 from typing import Tuple
 import torch
 import numpy as np
@@ -9,11 +12,8 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="mobile_sam")
 
 from mobile_sam import sam_model_registry, SamPredictor
-from mobile_sam.utils.amg import batched_mask_to_box
-from torchvision.ops.boxes import batched_nms
 
 from .SegmentationModel import SegmentationModel
-from .utils import get_grid_coords, bbox_area
 
 
 class YoloMobileSAM(SegmentationModel):
@@ -25,6 +25,8 @@ class YoloMobileSAM(SegmentationModel):
         sam_model_type: str,
         sam_checkpoint_path: str,
         sam_device: str,
+        debug_images: bool,
+        debug_dir: str = ".",
     ):
         self.yolo_checkpoint_path = yolo_checkpoint_path
         self.yolo_class_path = yolo_class_path
@@ -32,6 +34,9 @@ class YoloMobileSAM(SegmentationModel):
         self.sam_model_type = sam_model_type
         self.sam_checkpoint_path = sam_checkpoint_path
         self.sam_device = sam_device
+        self.debug_images = debug_images
+        self.debug_dir = Path(debug_dir)
+        self.debug_counter = 0
 
         # YOLO
         with open(self.yolo_class_path, "r") as f:
@@ -48,6 +53,10 @@ class YoloMobileSAM(SegmentationModel):
         mobile_sam.eval()
 
         self.sam_predictor = SamPredictor(mobile_sam)
+
+        if self.debug_images:
+            os.makedirs(self.debug_dir / "detections", exist_ok=False)
+            os.makedirs(self.debug_dir / "segments", exist_ok=False)
 
     def __call__(
         self, img: np.ndarray
@@ -80,11 +89,14 @@ class YoloMobileSAM(SegmentationModel):
             ]
             bbox = torch.from_numpy(bbox).to(torch.int)
 
-        # from concept_graphs.viz.segmentation import plot_segments
-        # import matplotlib.pyplot as plt
-        # yolo_output[0].show()
-        # plot_segments(img, masks)
-        # plt.show()
-        # exit()
+        if self.debug_images:
+            from concept_graphs.viz.segmentation import plot_segments
+            import matplotlib.pyplot as plt
+            img_name = str(self.debug_counter).zfill(7) + ".png"
+            yolo_output[0].plot(show=False, save=True, filename=str(self.debug_dir / "detections" / img_name))
+            plot_segments(img, masks)
+            plt.savefig(self.debug_dir / "segments" / img_name)
+            plt.close()
+            self.debug_counter += 1
 
         return masks, bbox, iou_predictions

@@ -90,6 +90,9 @@ def main(cfg: DictConfig):
     os.symlink(map_path, symlink)
     log.info(f"Created symlink to latest map at {symlink}")
 
+    # Move debug directory if it exists
+    if os.path.exists(output_dir / "debug"):
+        os.rename(output_dir / "debug", output_dir_map / "debug")
 
 if __name__ == "__main__":
     main()
