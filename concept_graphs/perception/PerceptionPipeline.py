@@ -1,5 +1,8 @@
+import os
 from typing import Dict, List, Union
+import torch
 import numpy as np
+from pathlib import Path
 from .ft_extraction.FeatureExtractor import FeatureExtractor
 from .segmentation.SegmentationModel import SegmentationModel
 from .rgbd_to_pcd import rgbd_to_object_pcd
@@ -24,6 +27,8 @@ class PerceptionPipeline:
         bg_sim_thresh: float = 1.0,
         crop_bg_color: Union[int, None] = None,
         min_mask_area_px: int = 25,
+        debug_images: bool = False,
+        debug_dir: str = ".",
     ):
         self.segmentation_model = segmentation_model
         self.ft_extractor = ft_extractor
@@ -35,6 +40,9 @@ class PerceptionPipeline:
         self.bg_classes = bg_classes
         self.bg_sim_thresh = bg_sim_thresh
         self.min_mask_area_px = min_mask_area_px
+        self.debug_images = debug_images
+        self.debug_dir = Path(debug_dir)
+        self.debug_counter = 0
 
         self.bg_features = None
 
@@ -42,6 +50,9 @@ class PerceptionPipeline:
         if self.bg_classes is not None:
             self.bg_features = self.ft_extractor.encode_text(self.bg_classes)
             self.bg_features.to(self.ft_extractor.device)
+
+        if self.debug_images:
+            os.makedirs(self.debug_dir / "segments", exist_ok=True)
 
     def __call__(
         self, rgb: np.ndarray, depth: np.ndarray, intrinsics: np.ndarray
@@ -99,6 +110,15 @@ class PerceptionPipeline:
         pcd_points, pcd_rgb = rgbd_to_object_pcd(
             rgb, depth, masks, intrinsics, depth_trunc=self.depth_trunc
         )
+
+        if self.debug_images:
+            from concept_graphs.viz.segmentation import plot_segments
+            import matplotlib.pyplot as plt
+            img_name = str(self.debug_counter).zfill(7) + ".png"
+            plot_segments(rgb, torch.from_numpy(masks))
+            plt.savefig(self.debug_dir / "segments" / img_name)
+            plt.close()
+            self.debug_counter += 1
 
         return dict(
             rgb_crops=rgb_crops,

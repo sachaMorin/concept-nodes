@@ -1,5 +1,6 @@
 import os
 
+import shutil
 from pathlib import Path
 from typing import Tuple
 import torch
@@ -55,8 +56,7 @@ class YoloMobileSAM(SegmentationModel):
         self.sam_predictor = SamPredictor(mobile_sam)
 
         if self.debug_images:
-            os.makedirs(self.debug_dir / "detections", exist_ok=False)
-            os.makedirs(self.debug_dir / "segments", exist_ok=False)
+            os.makedirs(self.debug_dir / "detections", exist_ok=True)
 
     def __call__(
         self, img: np.ndarray
@@ -90,13 +90,8 @@ class YoloMobileSAM(SegmentationModel):
             bbox = torch.from_numpy(bbox).to(torch.int)
 
         if self.debug_images:
-            from concept_graphs.viz.segmentation import plot_segments
-            import matplotlib.pyplot as plt
             img_name = str(self.debug_counter).zfill(7) + ".png"
             yolo_output[0].plot(show=False, save=True, filename=str(self.debug_dir / "detections" / img_name))
-            plot_segments(img, masks)
-            plt.savefig(self.debug_dir / "segments" / img_name)
-            plt.close()
             self.debug_counter += 1
 
         return masks, bbox, iou_predictions
