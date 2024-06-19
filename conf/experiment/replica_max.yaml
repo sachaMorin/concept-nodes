@@ -7,6 +7,8 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
+final_min_segments: 10
+
 name: replica_yolo
 
 dataset:
@@ -15,7 +17,7 @@ dataset:
   resized_height: 340
 
 perception:
-  bg_sim_thresh: 0.61
+  bg_sim_thresh: 0.615
   crop_bg_color: 255
 
 mapping:

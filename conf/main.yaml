@@ -4,6 +4,7 @@ defaults:
   - _self_
 
 name: ???
+final_min_segments: 0
 save_map: true
 seed: 123
 
