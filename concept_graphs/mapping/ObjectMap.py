@@ -195,10 +195,14 @@ class ObjectMap:
         self.collate_objects()
         self.collate()
 
-    def filter_min_segments(self, grace: bool = True):
-        self.objects = {
-            k: v for k, v in self.objects.items() if (v.n_segments >= self.n_min_segments) or (grace and (self.n_updates - v.timestep_created < self.grace_min_segments))
-        }
+    def filter_min_segments(self, n_min_segments: int = -1, grace: bool = True):
+        if n_min_segments < 0:
+            n_min_segments = self.n_min_segments
+        new_objects = {}
+        for k, obj in self.objects.items():
+            if obj.n_segments >= n_min_segments or (grace and (self.n_updates - obj.timestep_created < self.grace_min_segments)):
+                new_objects[k] = obj
+        self.objects = new_objects
         self.collate()
 
     def collate_objects(self):
