@@ -125,7 +125,7 @@ def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7
     contained = (inter_over_box1 < th2) & (inter_over_box2 > th1)  # (N, N)
     contained_idx = contained.nonzero()  # (num_contained, 2)
 
-    mask_sub = mask.copy()  # (N, H, W)
+    mask_sub = mask.clone()  # (N, H, W)
     # mask_sub[contained_idx[0]] = mask_sub[contained_idx[0]] & (~mask_sub[contained_idx[1]])
     for i in range(len(contained_idx[0])):
         mask_sub[contained_idx[0][i]] = mask_sub[contained_idx[0][i]] & (
