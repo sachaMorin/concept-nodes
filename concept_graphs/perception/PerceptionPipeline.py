@@ -68,6 +68,9 @@ class PerceptionPipeline:
         touches_border = touches_left | touches_right | touches_top | touches_bottom
         touches_border = touches_border.cpu().numpy()
 
+        if self.mask_subtract_contained:
+            masks = mask_subtract_contained(bbox, masks)
+
         if self.inflate_bbox_px > 0:
             bbox = safe_bbox_inflate(
                 bbox, self.inflate_bbox_px, rgb.shape[1], rgb.shape[0]
@@ -78,9 +81,6 @@ class PerceptionPipeline:
             bbox.cpu().numpy(),
             conf.cpu().numpy(),
         )
-
-        if self.mask_subtract_contained:
-            masks = mask_subtract_contained(bbox, masks)
 
         areas = masks.sum(axis=-1).sum(axis=-1)
 
@@ -118,8 +118,16 @@ class PerceptionPipeline:
             plot_segments(rgb, torch.from_numpy(masks))
             plt.savefig(self.debug_dir / "segments" / img_name)
             plt.close()
-            self.debug_counter += 1
 
+            # Save all masks as individual images
+            mask_path = self.debug_dir / "segments" / str(self.debug_counter)
+            os.makedirs(mask_path, exist_ok=True)
+            from PIL import Image
+            for i, mask in enumerate(masks):
+                mask = mask.astype(np.uint8) * 255
+                mask_img = Image.fromarray(mask)
+                mask_img.save(mask_path /  f"{i}.png")
+            self.debug_counter += 1
         return dict(
             rgb_crops=rgb_crops,
             mask_crops=mask_crops,
