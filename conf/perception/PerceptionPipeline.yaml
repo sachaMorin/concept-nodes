@@ -15,5 +15,5 @@ bg_sim_thresh: 0.605
 crop_bg_color: null  # null: keep bg, 0: black, 255: white
 semantic_similarity:
   _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
-debug_images: true
+debug_images: ${debug}
 debug_dir: ${output_dir}/debug

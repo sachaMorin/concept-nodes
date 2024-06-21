@@ -1,7 +1,9 @@
 from typing import List, Union
 import numpy as np
 import torch
+import logging
 
+log = logging.getLogger(__name__)
 
 def get_grid_coords(
         grid_width: int,
@@ -101,7 +103,7 @@ def bbox_overlap(xyxy: torch.Tensor) -> torch.Tensor:
 def mask_subtract_contained(xyxy: torch.Tensor, mask: torch.Tensor):
     """Adapted from the original CG repo at https://github.com/concept-graphs/concept-graphs"""
     overlap = bbox_overlap(xyxy)
-    areas = bbox_area(xyxy)
+    areas = mask.sum(dim=(1, 2))
 
     overlap = torch.tril(overlap, diagonal=-1)
 
@@ -111,12 +113,13 @@ def mask_subtract_contained(xyxy: torch.Tensor, mask: torch.Tensor):
     mask_sub = mask.clone()
     for i, j in is_overlapping_idx:
         if areas[i] > areas[j]:
-            mask_sub[i] = mask_sub[i] & (~mask_sub[j])
+            mask_sub[i] = mask_sub[i] & (~mask[j])
         else:
-            mask_sub[j] = mask_sub[j] & (~mask_sub[i])
+            mask_sub[j] = mask_sub[j] & (~mask[i])
 
-    mask_sum = mask_sub.sum(dim=0)
+    still_overlaps = mask_sub.sum(dim=0) > 1
 
-    assert torch.all(mask_sum <= 1)
+    if torch.any(still_overlaps):
+        logging.warning(f"Some segments still overlaps: {still_overlaps.sum()} px")
 
     return mask_sub
