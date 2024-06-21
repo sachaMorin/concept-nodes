@@ -120,6 +120,6 @@ def mask_subtract_contained(xyxy: torch.Tensor, mask: torch.Tensor):
     still_overlaps = mask_sub.sum(dim=0) > 1
 
     if torch.any(still_overlaps):
-        logging.warning(f"Some segments still overlaps: {still_overlaps.sum()} px")
+        logging.warning(f"Some segments still overlap: {still_overlaps.sum()} px")
 
     return mask_sub
