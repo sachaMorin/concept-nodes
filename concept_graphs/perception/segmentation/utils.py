@@ -4,13 +4,13 @@ import torch
 
 
 def get_grid_coords(
-    grid_width: int,
-    grid_height: int,
-    image_width: int,
-    image_height: int,
-    device: str,
-    jitter: bool = False,
-    uniform_jitter: bool = True,
+        grid_width: int,
+        grid_height: int,
+        image_width: int,
+        image_height: int,
+        device: str,
+        jitter: bool = False,
+        uniform_jitter: bool = True,
 ) -> torch.Tensor:
     y = torch.linspace(0, 1, grid_height + 2, device=device)[1:-1] * image_height
     x = torch.linspace(0, 1, grid_width + 2, device=device)[1:-1] * image_width
@@ -48,7 +48,7 @@ def bbox_area(bbox: torch.Tensor) -> torch.Tensor:
 
 
 def safe_bbox_inflate(
-    bbox: torch.Tensor, inflate_px: int, img_width: int, img_height: int
+        bbox: torch.Tensor, inflate_px: int, img_width: int, img_height: int
 ) -> torch.Tensor:
     bbox = bbox.clone()
     bbox[:, 0] = torch.clamp(bbox[:, 0] - inflate_px, 0, img_width - 1)
@@ -59,14 +59,14 @@ def safe_bbox_inflate(
 
 
 def extract_rgb_crops(
-    img: np.ndarray,
-    bbox: np.ndarray,
-    mask_crops: Union[List[np.ndarray], None] = None,
-    bg_color: Union[int, None] = None,
+        img: np.ndarray,
+        bbox: np.ndarray,
+        mask_crops: Union[List[np.ndarray], None] = None,
+        bg_color: Union[int, None] = None,
 ) -> List[np.ndarray]:
     crops = []
     for i, box in enumerate(bbox):
-        crop = img[box[1] : box[3], box[0] : box[2]]
+        crop = img[box[1]: box[3], box[0]: box[2]]
         if mask_crops is not None and bg_color is not None:
             crop = np.where(mask_crops[i][:, :, np.newaxis], crop, bg_color)
         crops.append(crop)
@@ -76,35 +76,15 @@ def extract_rgb_crops(
 def extract_mask_crops(masks: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
     crops = []
     for mask, box in zip(masks, bbox):
-        crop = mask[box[1] : box[3], box[0] : box[2]]
+        crop = mask[box[1]: box[3], box[0]: box[2]]
         crops.append(crop)
     return crops
 
 
-def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7):
-    """
-    Compute the containing relationship between all pair of bounding boxes.
-    For each mask, subtract the mask of bounding boxes that are contained by it.
-
-    Stolen from original ConceptGraphs repo at https://github.com/concept-graphs/concept-graphs
-
-    Args:
-        xyxy: (N, 4), in (x1, y1, x2, y2) format
-        mask: (N, H, W), binary mask
-        th1: float, threshold for computing intersection over box1
-        th2: float, threshold for computing intersection over box2
-
-    Returns:
-        mask_sub: (N, H, W), binary mask
-    """
-    N = xyxy.shape[0]  # number of boxes
-
-    # Get areas of each xyxy
-    areas = (xyxy[:, 2] - xyxy[:, 0]) * (xyxy[:, 3] - xyxy[:, 1])  # (N,)
-
+def bbox_overlap(xyxy: torch.Tensor) -> torch.Tensor:
     # Compute intersection boxes
-    lt = np.maximum(xyxy[:, None, :2], xyxy[None, :, :2])  # left-top points (N, N, 2)
-    rb = np.minimum(
+    lt = torch.maximum(xyxy[:, None, :2], xyxy[None, :, :2])  # left-top points (N, N, 2)
+    rb = torch.minimum(
         xyxy[:, None, 2:], xyxy[None, :, 2:]
     )  # right-bottom points (N, N, 2)
 
@@ -115,21 +95,28 @@ def mask_subtract_contained(xyxy: np.ndarray, mask: np.ndarray, th1=0.8, th2=0.7
     # Compute areas of intersection boxes
     inter_areas = inter[:, :, 0] * inter[:, :, 1]  # (N, N)
 
-    inter_over_box1 = inter_areas / areas[:, None]  # (N, N)
-    # inter_over_box2 = inter_areas / areas[None, :] # (N, N)
-    inter_over_box2 = inter_over_box1.T  # (N, N)
+    return inter_areas
 
-    # if the intersection area is smaller than th2 of the area of box1,
-    # and the intersection area is larger than th1 of the area of box2,
-    # then box2 is considered contained by box1
-    contained = (inter_over_box1 < th2) & (inter_over_box2 > th1)  # (N, N)
-    contained_idx = contained.nonzero()  # (num_contained, 2)
 
-    mask_sub = mask.clone()  # (N, H, W)
-    # mask_sub[contained_idx[0]] = mask_sub[contained_idx[0]] & (~mask_sub[contained_idx[1]])
-    for i in range(len(contained_idx[0])):
-        mask_sub[contained_idx[0][i]] = mask_sub[contained_idx[0][i]] & (
-            ~mask_sub[contained_idx[1][i]]
-        )
+def mask_subtract_contained(xyxy: torch.Tensor, mask: torch.Tensor):
+    """Adapted from the original CG repo at https://github.com/concept-graphs/concept-graphs"""
+    overlap = bbox_overlap(xyxy)
+    areas = bbox_area(xyxy)
+
+    overlap = torch.tril(overlap, diagonal=-1)
+
+    is_overlapping = overlap > 0
+    is_overlapping_idx = zip(*is_overlapping.nonzero(as_tuple=True))
+
+    mask_sub = mask.clone()
+    for i, j in is_overlapping_idx:
+        if areas[i] > areas[j]:
+            mask_sub[i] = mask_sub[i] & (~mask_sub[j])
+        else:
+            mask_sub[j] = mask_sub[j] & (~mask_sub[i])
+
+    mask_sum = mask_sub.sum(dim=0)
+
+    assert torch.all(mask_sum <= 1)
 
     return mask_sub
