@@ -18,6 +18,7 @@ class PerceptionPipeline:
     def __init__(
         self,
         segmentation_model: SegmentationModel,
+        segment_scoring_method: str,
         ft_extractor: FeatureExtractor,
         inflate_bbox_px: int,
         depth_trunc: float,
@@ -31,6 +32,7 @@ class PerceptionPipeline:
         debug_dir: str = ".",
     ):
         self.segmentation_model = segmentation_model
+        self.segment_scoring_method = segment_scoring_method
         self.ft_extractor = ft_extractor
         self.depth_trunc = depth_trunc
         self.inflate_bbox_px = inflate_bbox_px
@@ -68,13 +70,13 @@ class PerceptionPipeline:
         touches_border = touches_left | touches_right | touches_top | touches_bottom
         touches_border = touches_border.cpu().numpy()
 
-        if self.mask_subtract_contained:
-            masks = mask_subtract_contained(bbox, masks)
-
         if self.inflate_bbox_px > 0:
             bbox = safe_bbox_inflate(
                 bbox, self.inflate_bbox_px, rgb.shape[1], rgb.shape[0]
             )
+
+        if self.mask_subtract_contained:
+            masks = mask_subtract_contained(bbox, masks)
 
         masks, bbox, conf = (
             masks.cpu().numpy(),
@@ -84,8 +86,16 @@ class PerceptionPipeline:
 
         areas = masks.sum(axis=-1).sum(axis=-1)
 
-        # Choose scores and apply penalty
-        scores = areas
+        # Choose scoring method
+        if self.segment_scoring_method == "confidence":
+            scores = conf
+        elif self.segment_scoring_method == "area":
+            scores = areas
+        else:
+            raise ValueError(
+                f"Invalid segment scoring method: {self.segment_scoring_method}")
+
+        # Penalty for touching border
         if touches_border.any():
             scores[touches_border] = scores[touches_border] * .10
 

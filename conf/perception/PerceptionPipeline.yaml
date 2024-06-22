@@ -1,10 +1,11 @@
 _target_: concept_graphs.perception.PerceptionPipeline.PerceptionPipeline
 segmentation_model: ???
+segment_scoring_method: confidence
 ft_extractor: ???
 depth_trunc: 8.0
 inflate_bbox_px: 10
 mask_subtract_contained: true
-min_mask_area_px: 25
+min_mask_area_px: 100
 bg_classes:
   - wall
   - floor
