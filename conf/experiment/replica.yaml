@@ -29,9 +29,9 @@ mapping:
       eps: 0.1
     semantic_similarity:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
-      agg: max
-    geometric_sim_thresh: .5
-    semantic_sim_thresh: .85
+      agg: mean
+    geometric_sim_thresh: .7
+    semantic_sim_thresh: .7
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
@@ -39,6 +39,6 @@ mapping:
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10
-  collate_objects_every: 5
+  collate_objects_every: 1
   self_merge_every: -1
   device: cpu
