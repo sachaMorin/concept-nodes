@@ -43,6 +43,13 @@ class ObjectMap:
         # Map from index in collated tensors (e.g., semantic_tensor, geometry_tensor) to object key in self.objects
         self.key_map = []
 
+    def to(self, device: str):
+        self.device = device
+        if self.semantic_tensor is not None:
+            self.semantic_tensor = self.semantic_tensor.to(device)
+        if self.geometry_tensor is not None:
+            self.geometry_tensor = self.geometry_tensor.to(device)
+
     def __len__(self):
         return len(self.objects)
 
