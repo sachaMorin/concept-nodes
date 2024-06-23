@@ -44,11 +44,12 @@ class CallbackManager:
             c.paint_uniform_color(color)
 
         # Similarities
-        self.map.semantic_tensor = map.semantic_tensor.to(ft_extractor.device)
+        device = ft_extractor.device if ft_extractor is not None else "cpu"
+        self.map.semantic_tensor = map.semantic_tensor.to(device)
         self.self_semantic_sim = self.map.similarity.semantic_similarity(
             map.semantic_tensor, map.semantic_tensor
         )
-        self.map.geometry_tensor = map.geometry_tensor.to(ft_extractor.device)
+        self.map.geometry_tensor = map.geometry_tensor.to(device)
         self.self_geometric_sim = self.map.similarity.geometric_similarity(
             map.geometry_tensor, map.geometry_tensor
         )
@@ -127,6 +128,9 @@ class CallbackManager:
         self.update_geometries(vis, self.pcd_names, self.pcd)
 
     def query(self, vis):
+        if self.ft_extractor is None:
+            log.warning("No feature extractor provided.")
+            return
         query = input("Enter query: ")
         query_ft = self.ft_extractor.encode_text([query])
         self.sim_query = self.map.similarity.semantic_similarity(
@@ -190,7 +194,7 @@ def main(cfg: DictConfig):
     set_seed(cfg.seed)
     map = load_map(cfg.map_path)
     log.info(f"Loading map with a total of {len(map)} objects")
-    ft_extractor = hydra.utils.instantiate(cfg.ft_extraction)
+    ft_extractor = hydra.utils.instantiate(cfg.ft_extraction) if hasattr(cfg, "ft_extraction") else None
 
     # Callback Manager
     manager = CallbackManager(map, ft_extractor, mode=cfg.mode)
