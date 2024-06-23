@@ -7,6 +7,9 @@ class SegmentHeap:
         self.max_size = max_size
         self.heap = []
 
+    def __getitem__(self, item):
+        return self.heap[item]
+
     def __iter__(self):
         return iter(self.heap)
 

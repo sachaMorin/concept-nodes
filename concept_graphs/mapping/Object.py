@@ -134,6 +134,21 @@ class Object:
         if self.downsampling_callback is not None:
             self.pcd = self.downsampling_callback(self.pcd)
 
+    def cluster_top_k(self, k: int):
+        ft = [v.semantic_ft for v in self.segments]
+        ft = np.stack(ft, axis=0)
+        mean = np.mean(ft, axis=0, keepdims=True)
+        mean /= np.linalg.norm(mean, axis=1, keepdims=True)
+        sim = ft @ mean.T
+        idx = sim[:, 0].argsort()[-k:]
+
+        new_heap = SegmentHeap(max_size=self.segments.max_size)
+        for i in idx:
+            new_heap.push(self.segments[i])
+        self.segments = new_heap
+        self.is_collated = False
+
+
     def __iadd__(self, other):
         segment_added = self.segments.extend(other.segments)
         self.n_segments += other.n_segments

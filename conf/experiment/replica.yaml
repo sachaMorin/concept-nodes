@@ -7,7 +7,7 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-final_min_segments: 10
+final_min_segments: 15
 
 name: replica_yolo
 
@@ -30,8 +30,8 @@ mapping:
     semantic_similarity:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
       agg: mean
-    geometric_sim_thresh: .7
-    semantic_sim_thresh: .7
+    geometric_sim_thresh: .75
+    semantic_sim_thresh: .75
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
