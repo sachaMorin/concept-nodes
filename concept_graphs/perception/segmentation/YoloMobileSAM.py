@@ -25,6 +25,7 @@ class YoloMobileSAM(SegmentationModel):
         yolo_device: str,
         sam_model_type: str,
         sam_checkpoint_path: str,
+        sam_prompting: str,
         sam_device: str,
         debug_images: bool,
         debug_dir: str = ".",
@@ -34,6 +35,7 @@ class YoloMobileSAM(SegmentationModel):
         self.yolo_device = yolo_device
         self.sam_model_type = sam_model_type
         self.sam_checkpoint_path = sam_checkpoint_path
+        self.sam_prompting = sam_prompting
         self.sam_device = sam_device
         self.debug_images = debug_images
         self.debug_dir = Path(debug_dir)
@@ -75,12 +77,22 @@ class YoloMobileSAM(SegmentationModel):
             )
 
             self.sam_predictor.set_image(img)
-            masks, iou_predictions, _ = self.sam_predictor.predict_torch(
-                point_coords=None,
-                point_labels=None,
-                boxes=bbox_transformed,
-                multimask_output=True,
-            )
+            if self.sam_prompting == "bbox":
+                masks, iou_predictions, _ = self.sam_predictor.predict_torch(
+                    point_coords=None,
+                    point_labels=None,
+                    boxes=bbox_transformed,
+                    multimask_output=True,
+                )
+            elif self.sam_prompting == "bbox_center":
+                bbox_center = (bbox_transformed[:, :2] + bbox_transformed[:, 2:]) // 2
+                masks, iou_predictions, _ = self.sam_predictor.predict_torch(
+                    point_coords=bbox_center.unsqueeze(1),
+                    point_labels=torch.ones(bbox_center.size(0), 1).to(self.sam_device),
+                    multimask_output=True,
+                )
+            else:
+                raise ValueError(f"Unknown prompting type: {self.sam_prompting}")
 
             best = torch.argmax(iou_predictions, dim=1)
             masks = masks[torch.arange(masks.size(0)), best]
