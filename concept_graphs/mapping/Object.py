@@ -36,7 +36,8 @@ class Object:
         self.semantic_ft = None
         self.segments = SegmentHeap(max_size=segment_heap_size)
         self.n_segments = 1
-        self.caption = ""
+        self.caption = "empty"
+        self.tag = "empty"
 
         # Set our first object-level point cloud
         self.pcd = o3d.geometry.PointCloud()
@@ -176,8 +177,7 @@ class Object:
         from ..viz.segmentation import plot_grid_images
 
         rgb_crops = [v.rgb for v in self.segments]
-        plot_grid_images(rgb_crops, None, grid_width=3, title=self.caption)
-
+        plot_grid_images(rgb_crops, None, grid_width=3, tag=self.tag, caption=self.caption)
 
 class ObjectFactory:
     def __init__(self, **kwargs):

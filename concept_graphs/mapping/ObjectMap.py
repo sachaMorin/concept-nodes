@@ -4,11 +4,7 @@ import torch
 import open3d as o3d
 from .Object import Object, ObjectFactory
 from .similarity.Similarity import Similarity
-import logging
 
-
-# A logger for this file
-log = logging.getLogger(__name__)
 
 
 class ObjectMap:
@@ -230,12 +226,6 @@ class ObjectMap:
             self.collate_objects()
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
             self.self_merge()
-
-    def caption_objects(self, captioner: "ImageCaptioner"):
-        for obj in self:
-            views = [v.rgb for v in obj.segments]
-            obj.caption = captioner(views)
-            log.info(obj.caption)
 
     def save_object_grids(self, save_dir: str):
         import matplotlib.pyplot as plt

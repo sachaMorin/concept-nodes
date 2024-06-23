@@ -33,3 +33,9 @@ class OpenAITagger(OpenAICaptioner):
         response = response.replace(",", "")
 
         return response
+
+    def caption_map(self, map: "ObjectMap") -> None:
+        for obj in map:
+            views = [v.rgb for v in obj.segments]
+            obj.tag = self(views)
+            log.info(obj.tag)

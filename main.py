@@ -62,10 +62,15 @@ def main(cfg: DictConfig):
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
-    if hasattr(cfg, "vlm") and cfg.vlm is not None:
+    if  cfg.caption and hasattr(cfg, "vlm_caption"):
         log.info("Captioning objects...")
-        captioner = hydra.utils.instantiate(cfg.vlm)
-        main_map.caption_objects(captioner)
+        captioner = hydra.utils.instantiate(cfg.vlm_caption)
+        captioner.caption_map(main_map)
+
+    if cfg.caption and hasattr(cfg, "vlm_tag"):
+        log.info("Tagging objects...")
+        captioner = hydra.utils.instantiate(cfg.vlm_tag)
+        captioner.caption_map(main_map)
 
     # Save visualizations and map
     if not cfg.save_map:

@@ -6,6 +6,7 @@ defaults:
 name: ???
 final_min_segments: ???
 debug: false
+caption: false
 save_map: true
 seed: 123
 

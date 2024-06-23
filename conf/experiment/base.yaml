@@ -3,6 +3,8 @@ defaults:
   - /perception: PerceptionPipeline
   - /mapping: ObjectMap
   - /segmentation: ???
+  - /vlm@vlm_caption: OpenAICaptioner
+  - /vlm@vlm_tag: OpenAITagger
   - _self_
 
 dataloader:
