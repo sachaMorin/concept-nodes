@@ -7,7 +7,9 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-name: replica
+final_min_segments: 10
+
+name: replica_yolo
 
 dataset:
   sequence_stride: 5
@@ -15,19 +17,21 @@ dataset:
   resized_height: 340
 
 perception:
-  bg_sim_thresh: 0.62
+  bg_sim_thresh: 0.615
   crop_bg_color: 255
 
 mapping:
   similarity:
+    _target_: concept_graphs.mapping.similarity.Similarity.Similarity
     geometric_similarity:
-      eps: 0.08
+      _target_: concept_graphs.mapping.similarity.geometric.RadiusOverlap
       agg: max
+      eps: 0.1
     semantic_similarity:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01Multi
-      agg:  mean
-    geometric_sim_thresh: .4
-    semantic_sim_thresh: .75
+      agg: max
+    geometric_sim_thresh: .5
+    semantic_sim_thresh: .85
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
@@ -36,4 +40,5 @@ mapping:
   grace_min_segments: 30
   filter_min_every: 10
   collate_objects_every: 5
+  self_merge_every: -1
   device: cpu
