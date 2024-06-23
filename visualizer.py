@@ -193,6 +193,12 @@ class CallbackManager:
 def main(cfg: DictConfig):
     set_seed(cfg.seed)
     map = load_map(cfg.map_path)
+    print(map.similarity.geometric_similarity.eps)
+    map.similarity.geometric_sim_thresh = .9
+    map.similarity.semantic_similarity.agg = "mean"
+    map.similarity.semantic_sim_thresh = .9
+    map.to("cpu")
+    map.self_merge()
     log.info(f"Loading map with a total of {len(map)} objects")
     ft_extractor = hydra.utils.instantiate(cfg.ft_extraction) if hasattr(cfg, "ft_extraction") else None
 

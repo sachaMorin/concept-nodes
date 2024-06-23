@@ -50,9 +50,8 @@ def main(cfg: DictConfig):
 
     # Postprocessing
     main_map.filter_min_segments(n_min_segments=cfg.final_min_segments, grace=False)
-    main_map.self_merge()
-    main_map.self_merge()
-    main_map.denoise_objects()
+    # main_map.downsample()
+    # main_map.denoise_objects()
 
     stop = time.time()
     log.info("Objects in final map: %d" % len(main_map))
@@ -62,8 +61,6 @@ def main(cfg: DictConfig):
         log.info("Captioning objects...")
         captioner = hydra.utils.instantiate(cfg.vlm)
         main_map.caption_objects(captioner)
-
-    # main_map.draw_geometries(random_colors=False)
 
     # Save visualizations and map
     if not cfg.save_map:

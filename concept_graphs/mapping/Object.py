@@ -120,7 +120,7 @@ class Object:
     def collate(self):
         if not self.is_collated:
             self.update_pcd()
-            self.downsample()
+            # self.downsample()
             self.update_geometry()
             self.update_semantic_ft()
 
