@@ -128,16 +128,8 @@ class PerceptionPipeline:
             plot_segments(rgb, torch.from_numpy(masks))
             plt.savefig(self.debug_dir / "segments" / img_name)
             plt.close()
-
-            # Save all masks as individual images
-            mask_path = self.debug_dir / "segments" / str(self.debug_counter)
-            os.makedirs(mask_path, exist_ok=True)
-            from PIL import Image
-            for i, mask in enumerate(masks):
-                mask = mask.astype(np.uint8) * 255
-                mask_img = Image.fromarray(mask)
-                mask_img.save(mask_path /  f"{i}.png")
             self.debug_counter += 1
+
         return dict(
             rgb_crops=rgb_crops,
             mask_crops=mask_crops,
