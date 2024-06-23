@@ -192,12 +192,12 @@ class CallbackManager:
 @hydra.main(version_base=None, config_path="conf", config_name="visualizer")
 def main(cfg: DictConfig):
     set_seed(cfg.seed)
-    map = load_map(cfg.map_path)
-    log.info(f"Loading map with a total of {len(map)} objects")
+    main_map = load_map(cfg.map_path)
+    log.info(f"Loading map with a total of {len(main_map)} objects")
     ft_extractor = hydra.utils.instantiate(cfg.ft_extraction) if hasattr(cfg, "ft_extraction") else None
 
     # Callback Manager
-    manager = CallbackManager(map, ft_extractor, mode=cfg.mode)
+    manager = CallbackManager(main_map, ft_extractor, mode=cfg.mode)
 
     # Visualizer
     if cfg.mode == "keycallback":

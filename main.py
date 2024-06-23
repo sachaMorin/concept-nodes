@@ -50,7 +50,7 @@ def main(cfg: DictConfig):
 
     # Postprocessing
     main_map.filter_min_segments(n_min_segments=cfg.final_min_segments, grace=False)
-    for _ in range(1):
+    for _ in range(2):
         main_map.denoise_objects()
         for obj in main_map:
             obj.cluster_top_k(6)
