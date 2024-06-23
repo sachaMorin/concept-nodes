@@ -4,6 +4,7 @@ yolo_class_path: ${cache_dir}/scannet200_classes.txt
 yolo_device: cuda
 sam_model_type: vit_t
 sam_checkpoint_path: ${cache_dir}/mobile_sam.pt
+sam_prompting: bbox
 sam_device: cuda
 debug_images: ${debug}
 debug_dir: ${output_dir}/debug
