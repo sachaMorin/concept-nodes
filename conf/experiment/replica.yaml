@@ -17,6 +17,7 @@ dataset:
   resized_height: 340
 
 perception:
+  segment_scoring_method: area
   bg_sim_thresh: 0.615
   crop_bg_color: 255
 

@@ -9,5 +9,5 @@ dataset:
 
 mapping:
   object_factory:
-    n_sample_pcd: 200
+    n_sample_pcd: 300
   device: cuda
