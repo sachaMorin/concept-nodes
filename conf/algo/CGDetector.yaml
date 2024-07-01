@@ -25,7 +25,7 @@ mapping:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
     geometric_sim_thresh: 0.2
     semantic_sim_thresh: 0.2
-    sim_thresh: 0.7
+    sim_thresh: 0.85
   object_factory:
     _target_: concept_graphs.mapping.Object.RunningAverageObjectFactory
     semantic_mode: mean
@@ -36,4 +36,6 @@ mapping:
   filter_min_every: 10
   collate_objects_every: 1
   self_merge_every: 5
+  downsample_every: 5
+  denoise_every: -1
   device: cuda

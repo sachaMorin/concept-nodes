@@ -6,19 +6,20 @@ from .Object import Object, ObjectFactory
 from .similarity.Similarity import Similarity
 
 
-
 class ObjectMap:
 
     def __init__(
-        self,
-        similarity: Similarity,
-        object_factory: ObjectFactory,
-        n_min_segments: int,
-        grace_min_segments: int,
-        filter_min_every: int,
-        collate_objects_every: int,
-        self_merge_every: int,
-        device: str = "cpu",
+            self,
+            similarity: Similarity,
+            object_factory: ObjectFactory,
+            n_min_segments: int,
+            grace_min_segments: int,
+            filter_min_every: int,
+            collate_objects_every: int,
+            self_merge_every: int,
+            denoise_every: int,
+            downsample_every: int,
+            device: str = "cpu",
     ):
         self.similarity = similarity
         self.n_min_segments = n_min_segments
@@ -27,6 +28,8 @@ class ObjectMap:
         self.object_factory = object_factory
         self.collate_objects_every = collate_objects_every
         self.self_merge_every = self_merge_every
+        self.denoise_every = denoise_every
+        self.downsample_every = downsample_every
         self.device = device
 
         self.current_id = 0
@@ -105,25 +108,25 @@ class ObjectMap:
         self.collate_keys()
 
     def from_perception(
-        self,
-        rgb_crops: List[np.ndarray],
-        mask_crops: List[np.ndarray],
-        features: np.ndarray,
-        scores: np.ndarray,
-        pcd_points: List[np.ndarray],
-        pcd_rgb: List[np.ndarray],
-        camera_pose: np.ndarray,
-        is_bg: np.ndarray,
+            self,
+            rgb_crops: List[np.ndarray],
+            mask_crops: List[np.ndarray],
+            features: np.ndarray,
+            scores: np.ndarray,
+            pcd_points: List[np.ndarray],
+            pcd_rgb: List[np.ndarray],
+            camera_pose: np.ndarray,
+            is_bg: np.ndarray,
     ):
         n_objects = len(rgb_crops)
         assert (
-            n_objects
-            == len(mask_crops)
-            == len(features)
-            == len(scores)
-            == len(pcd_points)
-            == len(pcd_rgb)
-            == len(is_bg)
+                n_objects
+                == len(mask_crops)
+                == len(features)
+                == len(scores)
+                == len(pcd_points)
+                == len(pcd_rgb)
+                == len(is_bg)
         )
 
         for i in range(len(rgb_crops)):
@@ -144,7 +147,7 @@ class ObjectMap:
         self.collate()
 
     def match_similarities(
-        self, other: "ObjectMap", mask_diagonal: bool = False
+            self, other: "ObjectMap", mask_diagonal: bool = False
     ) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
         return self.similarity(
@@ -203,7 +206,8 @@ class ObjectMap:
             n_min_segments = self.n_min_segments
         new_objects = {}
         for k, obj in self.objects.items():
-            if obj.n_segments >= n_min_segments or (grace and (self.n_updates - obj.timestep_created < self.grace_min_segments)):
+            if obj.n_segments >= n_min_segments or (
+                    grace and (self.n_updates - obj.timestep_created < self.grace_min_segments)):
                 new_objects[k] = obj
         self.objects = new_objects
         self.collate()
@@ -216,12 +220,20 @@ class ObjectMap:
         for obj in self:
             obj.denoise()
 
+    def downsample_objects(self):
+        for obj in self:
+            obj.downsample()
+
     def check_processing(self):
+        if self.downsample_every > 0 and self.n_updates % self.downsample_every == 0:
+            self.downsample_objects()
+        if self.denoise_every > 0 and self.n_updates % self.denoise_every == 0:
+            self.denoise_objects()
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
         if (
-            self.collate_objects_every > 0
-            and self.n_updates % self.collate_objects_every == 0
+                self.collate_objects_every > 0
+                and self.n_updates % self.collate_objects_every == 0
         ):
             self.collate_objects()
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:

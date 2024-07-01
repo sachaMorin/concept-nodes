@@ -204,11 +204,13 @@ class RunningAverageObject(Object):
 
     def __iadd__(self, other):
         self.segments.extend(other.segments)
-        self.n_segments += other.n_segments
-        self.semantic_ft = .95 * self.semantic_ft + .05 * other.semantic_ft
+        self_ratio = self.n_segments / (self.n_segments + other.n_segments)
+        other_ratio = other.n_segments / (self.n_segments + other.n_segments)
+        self.semantic_ft = self_ratio * self.semantic_ft + other_ratio * other.semantic_ft
         self.semantic_ft = self.semantic_ft / np.linalg.norm(self.semantic_ft, 2)
         self.pcd += other.pcd
 
+        self.n_segments += other.n_segments
         self.timestep_created = min(self.timestep_created, other.timestep_created)
         self.is_collated = False
 

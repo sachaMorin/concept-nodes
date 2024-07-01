@@ -50,6 +50,7 @@ def main(cfg: DictConfig):
 
     # Postprocessing
     main_map.filter_min_segments(n_min_segments=cfg.final_min_segments, grace=False)
+    main_map.downsample_objects()
     for _ in range(2):
         main_map.denoise_objects()
         for obj in main_map:
@@ -57,6 +58,7 @@ def main(cfg: DictConfig):
         main_map.collate_objects()
         main_map.collate()
         main_map.self_merge()
+    main_map.downsample_objects()
 
     stop = time.time()
     log.info("Objects in final map: %d" % len(main_map))
