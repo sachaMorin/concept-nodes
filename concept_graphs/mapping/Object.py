@@ -8,21 +8,21 @@ from .pcd_callbacks.PointCloudCallback import PointCloudCallback
 
 class Object:
     def __init__(
-        self,
-        score: float,
-        rgb: np.ndarray,
-        mask: np.ndarray,
-        semantic_ft: np.ndarray,
-        camera_pose: np.ndarray,
-        pcd_points: np.ndarray,
-        pcd_rgb: np.ndarray,
-        segment_heap_size: int,
-        geometry_mode: str,
-        semantic_mode: str,
-        timestep_created: int,
-        n_sample_pcd: int = 20,
-        denoising_callback: Union[PointCloudCallback, None] = None,
-        downsampling_callback: Union[PointCloudCallback, None] = None,
+            self,
+            score: float,
+            rgb: np.ndarray,
+            mask: np.ndarray,
+            semantic_ft: np.ndarray,
+            camera_pose: np.ndarray,
+            pcd_points: np.ndarray,
+            pcd_rgb: np.ndarray,
+            segment_heap_size: int,
+            geometry_mode: str,
+            semantic_mode: str,
+            timestep_created: int,
+            n_sample_pcd: int = 20,
+            denoising_callback: Union[PointCloudCallback, None] = None,
+            downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
@@ -149,7 +149,6 @@ class Object:
         self.segments = new_heap
         self.is_collated = False
 
-
     def __iadd__(self, other):
         segment_added = self.segments.extend(other.segments)
         self.n_segments += other.n_segments
@@ -179,9 +178,54 @@ class Object:
         rgb_crops = [v.rgb for v in self.segments]
         plot_grid_images(rgb_crops, None, grid_width=3, tag=self.tag, caption=self.caption)
 
+
+class RunningAverageObject(Object):
+    """CG object from the original paper. Semantic feature average. Append pcd.
+
+    We still use the heap to store images and masks, but nothing else."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.semantic_ft = self.segments[0].semantic_ft
+
+        self.segments[0].pcd_points = None
+        self.segments[0].pcd_rgb = None
+        self.segments[0].semantic_ft = None
+
+    def update_semantic_ft(self):
+        pass
+
+    def update_pcd(self):
+        pass
+
+    def cluster_top_k(self, k: int):
+        pass
+
+    def __iadd__(self, other):
+        self.segments.extend(other.segments)
+        self.n_segments += other.n_segments
+        self.semantic_ft = .95 * self.semantic_ft + .05 * other.semantic_ft
+        self.semantic_ft = self.semantic_ft / np.linalg.norm(self.semantic_ft, 2)
+        self.pcd += other.pcd
+
+        self.timestep_created = min(self.timestep_created, other.timestep_created)
+        self.is_collated = False
+
+        return self
+
+
 class ObjectFactory:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
     def __call__(self, **kwargs) -> Object:
         return Object(**kwargs, **self.kwargs)
+
+
+class RunningAverageObjectFactory:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def __call__(self, **kwargs) -> Object:
+        return RunningAverageObject(**kwargs, **self.kwargs)
