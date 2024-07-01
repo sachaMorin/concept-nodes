@@ -1,0 +1,14 @@
+_target_: rgbd_dataset.rgbd_dataset.datasets.Scannetpp.Scannetpp
+base_path: ${data_dir}/scannetpp_data
+scene: 4318f8bb3c
+width: 1920
+height: 1440
+resized_width: 960
+resized_height: 720
+sequence_start: 0
+sequence_end: -1
+sequence_stride: 50
+relative_pose: False
+depth_scale: 1000.0
+point_cloud: false
+depth_trunc: 8.0
