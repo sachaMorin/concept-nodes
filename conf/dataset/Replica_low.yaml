@@ -1,0 +1,4 @@
+defaults:
+  - Replica
+resized_width: 600
+resized_height: 340

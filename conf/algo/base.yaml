@@ -1,0 +1,9 @@
+# @package _global_
+defaults:
+  - /perception: PerceptionPipeline
+  - /mapping: ObjectMap
+  - /segmentation: ???
+  - /vlm@vlm_caption: OpenAICaptioner
+  - /vlm@vlm_tag: OpenAITagger
+  - _self_
+

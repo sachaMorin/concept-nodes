@@ -1,12 +1,22 @@
 defaults:
-  - experiment: ???
+  - algo: ???
+  - dataset: ???
   - paths: paths
   - _self_
 
 name: ???
-final_min_segments: ???
+final_min_segments: 15
 debug: false
 caption: false
 save_map: true
 seed: 123
+
+dataloader:
+  _target_:  torch.utils.data.DataLoader
+  batch_size: 1
+  shuffle: false
+  num_workers: 2
+  pin_memory: false
+  collate_fn:
+    _target_: rgbd_dataset.rgbd_dataset.dataloader.collate_fn_np_single_cb
 

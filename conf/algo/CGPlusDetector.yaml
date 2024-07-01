@@ -1,19 +1,13 @@
 # @package _global_
 defaults:
   - base
-  - /dataset: Replica
   - /ft_extraction: CLIP
   - override /segmentation: YoloMobileSAM
   - _self_
 
 final_min_segments: 15
 
-name: replica_yolo
-
-dataset:
-  sequence_stride: 5
-  resized_width: 600
-  resized_height: 340
+name: cg-plus-detector
 
 perception:
   segment_scoring_method: area
@@ -35,10 +29,10 @@ mapping:
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
-    n_sample_pcd: 80
+    n_sample_pcd: 300
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10
   collate_objects_every: 1
   self_merge_every: -1
-  device: cpu
+  device: cuda
