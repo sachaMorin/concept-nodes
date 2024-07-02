@@ -39,28 +39,32 @@ You can download the Replica dataset to `data_dir` using the
 # Usage
 ## Mapping
 
-Mapping configs are defined with [Hydra](https://hydra.cc/docs/intro/). We define specific configs as `experiments`.
+Mapping configs are defined with [Hydra](https://hydra.cc/docs/intro/). 
 
-To run the experiment defined in `conf/experiments/replica.yaml`, run:
-
+We define specific experiments with the `algo` and `dataset` keys. To run Concept-Graphs mapping on a low-resolution
+version of the Replica dataset, try
 
 ```bash
-python3 main.py experiment=replica
+python3 main.py algo=CGDetector dataset=Replica_low
 ```
 The map and other assets will be saved to `output_dir`. `main.py` will also create
 a symlink to the latest output in `output_dir/latest_map.pkl`.
 
 ## Hydra
 
-To visualize the entire config, run:
+To visualize the entire config without actually running the mapping, run:
 ```bash
-python3 main.py experiment=replica --cfg job
+python3 main.py algo=CGDetector dataset=Replica_low --cfg job
 ```
-You can override all parameters from the command line. For example, to run the same experiment using
-only Mobile-SAM on the first 100 frames, run:
+You can override all parameters from the command line. For example, you can change
+the dataset stride and the similarity threshold with
 ```bash
-python3 main.py experiment=replica segmentation=GridMobileSAM dataset.sequence_end=100
+python3 main.py algo=CGDetector dataset=Replica_low dataset.sequence_stride=10 mapping.similarity.sim_thresh=0.7
 ```
+## Tuning Guide
+TODO
+Explain key parameters for better maps. Also how to save memory.
+
 
 ## Visualizer
 To visualize the latest map with Open3D (`output_dir/latest_map.pkl`), use

@@ -5,7 +5,7 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-final_min_segments: 15
+final_min_segments: 5
 
 name: cg-plus-detector
 
@@ -29,7 +29,7 @@ mapping:
   object_factory:
     semantic_mode: multi
     geometry_mode: pcd
-    n_sample_pcd: 300
+    n_sample_pcd: 200
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10
@@ -37,4 +37,4 @@ mapping:
   self_merge_every: -1
   downsample_every: -1
   denoise_every: -1
-  device: cuda
+  device: cpu

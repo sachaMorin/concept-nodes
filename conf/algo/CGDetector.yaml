@@ -5,7 +5,7 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-final_min_segments: 15
+final_min_segments: 5
 
 name: cg-detector
 
@@ -25,12 +25,12 @@ mapping:
       _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
     geometric_sim_thresh: 0.2
     semantic_sim_thresh: 0.2
-    sim_thresh: 0.85
+    sim_thresh: 0.79
   object_factory:
     _target_: concept_graphs.mapping.Object.RunningAverageObjectFactory
     semantic_mode: mean
     geometry_mode: pcd
-    n_sample_pcd: 300
+    n_sample_pcd: 200
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10
@@ -38,4 +38,4 @@ mapping:
   self_merge_every: 5
   downsample_every: 5
   denoise_every: -1
-  device: cuda
+  device: cpu
