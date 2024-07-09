@@ -13,6 +13,7 @@ class ObjectMap:
             similarity: Similarity,
             object_factory: ObjectFactory,
             n_min_segments: int,
+            min_points_pcd: int,
             grace_min_segments: int,
             filter_min_every: int,
             collate_objects_every: int,
@@ -23,6 +24,7 @@ class ObjectMap:
     ):
         self.similarity = similarity
         self.n_min_segments = n_min_segments
+        self.min_points_pcd = min_points_pcd
         self.grace_min_segments = grace_min_segments
         self.filter_min_every = filter_min_every
         self.object_factory = object_factory
@@ -212,6 +214,16 @@ class ObjectMap:
         self.objects = new_objects
         self.collate()
 
+    def filter_min_points_pcd(self, min_points_pcd: int = -1):
+        if min_points_pcd < 0:
+            min_points_pcd = self.min_points_pcd
+        new_objects = {}
+        for k, obj in self.objects.items():
+            if len(obj.pcd.points) >= min_points_pcd:
+                new_objects[k] = obj
+        self.objects = new_objects
+        self.collate()
+
     def collate_objects(self):
         for obj in self:
             obj.collate()
@@ -231,6 +243,7 @@ class ObjectMap:
             self.denoise_objects()
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
+            self.filter_min_points_pcd()
         if (
                 self.collate_objects_every > 0
                 and self.n_updates % self.collate_objects_every == 0
