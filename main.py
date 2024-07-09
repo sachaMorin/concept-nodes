@@ -8,6 +8,7 @@ from tqdm import tqdm
 import time
 from concept_graphs.utils import set_seed
 import logging
+from concept_graphs.mapping.utils import test_unique_segments
 
 
 # A logger for this file
@@ -62,6 +63,7 @@ def main(cfg: DictConfig):
     main_map.filter_min_points_pcd()
 
     stop = time.time()
+    test_unique_segments(main_map)
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 

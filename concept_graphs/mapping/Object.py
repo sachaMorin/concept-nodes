@@ -4,6 +4,7 @@ import open3d as o3d
 from .Segment import Segment
 from .SegmentHeap import SegmentHeap
 from .pcd_callbacks.PointCloudCallback import PointCloudCallback
+import uuid
 
 
 class Object:
@@ -67,6 +68,8 @@ class Object:
         self.update_geometry()
         self.update_semantic_ft()
         self.is_collated = True
+
+        self.id = uuid.uuid4()
 
     def __repr__(self):
         return f"Object with {len(self.segments)} segments. Detected a total of {self.n_segments} times."
@@ -150,6 +153,9 @@ class Object:
         self.is_collated = False
 
     def __iadd__(self, other):
+        if self.id == other.id:
+            raise Exception("Trying to merge object with self.")
+
         segment_added = self.segments.extend(other.segments)
         self.n_segments += other.n_segments
         self.timestep_created = min(self.timestep_created, other.timestep_created)
@@ -203,6 +209,9 @@ class RunningAverageObject(Object):
         pass
 
     def __iadd__(self, other):
+        if self.id == other.id:
+            raise Exception("Trying to merge object with self.")
+
         self.segments.extend(other.segments)
         self_ratio = self.n_segments / (self.n_segments + other.n_segments)
         other_ratio = other.n_segments / (self.n_segments + other.n_segments)

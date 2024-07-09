@@ -1,4 +1,5 @@
 import numpy as np
+import uuid
 
 
 class Segment:
@@ -19,6 +20,7 @@ class Segment:
         self.pcd_points = pcd_points
         self.pcd_rgb = pcd_rgb
         self.camera_pose = camera_pose
+        self.id = uuid.uuid4()
 
     def __lt__(self, other):
         return self.score < other.score
