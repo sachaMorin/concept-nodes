@@ -9,21 +9,21 @@ import uuid
 
 class Object:
     def __init__(
-            self,
-            score: float,
-            rgb: np.ndarray,
-            mask: np.ndarray,
-            semantic_ft: np.ndarray,
-            camera_pose: np.ndarray,
-            pcd_points: np.ndarray,
-            pcd_rgb: np.ndarray,
-            segment_heap_size: int,
-            geometry_mode: str,
-            semantic_mode: str,
-            timestep_created: int,
-            n_sample_pcd: int = 20,
-            denoising_callback: Union[PointCloudCallback, None] = None,
-            downsampling_callback: Union[PointCloudCallback, None] = None,
+        self,
+        score: float,
+        rgb: np.ndarray,
+        mask: np.ndarray,
+        semantic_ft: np.ndarray,
+        camera_pose: np.ndarray,
+        pcd_points: np.ndarray,
+        pcd_rgb: np.ndarray,
+        segment_heap_size: int,
+        geometry_mode: str,
+        semantic_mode: str,
+        timestep_created: int,
+        n_sample_pcd: int = 20,
+        denoising_callback: Union[PointCloudCallback, None] = None,
+        downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
@@ -181,8 +181,10 @@ class Object:
     def view_images_caption(self):
         from ..viz.segmentation import plot_grid_images
 
-        rgb_crops = [v.rgb/255.0 for v in self.segments]
-        plot_grid_images(rgb_crops, None, grid_width=3, tag=self.tag, caption=self.caption)
+        rgb_crops = [v.rgb / 255.0 for v in self.segments]
+        plot_grid_images(
+            rgb_crops, None, grid_width=3, tag=self.tag, caption=self.caption
+        )
 
 
 class RunningAverageObject(Object):
@@ -215,7 +217,9 @@ class RunningAverageObject(Object):
         self.segments.extend(other.segments)
         self_ratio = self.n_segments / (self.n_segments + other.n_segments)
         other_ratio = other.n_segments / (self.n_segments + other.n_segments)
-        self.semantic_ft = self_ratio * self.semantic_ft + other_ratio * other.semantic_ft
+        self.semantic_ft = (
+            self_ratio * self.semantic_ft + other_ratio * other.semantic_ft
+        )
         self.semantic_ft = self.semantic_ft / np.linalg.norm(self.semantic_ft, 2)
         self.pcd += other.pcd
 

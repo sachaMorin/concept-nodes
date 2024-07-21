@@ -1,36 +1,48 @@
 import hydra
+import torch
 from omegaconf import DictConfig
 import logging
+import json
 
+from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
 import open3d as o3d
 import open3d.visualization.gui as gui
 import copy
 
 from concept_graphs.utils import load_map, set_seed
 from concept_graphs.viz.utils import similarities_to_rgb
-from concept_graphs.viz.segmentation import plot_grid_images
+from concept_graphs.mapping.similarity.semantic import CosineSimilarity01
 
 # A logger for this file
 log = logging.getLogger(__name__)
 
 
 class CallbackManager:
-    def __init__(self, map, ft_extractor, mode):
-        self.map = map
+    def __init__(self, pcd_o3d, clip_ft, ft_extractor, mode):
         self.ft_extractor = ft_extractor
         self.mode = mode
 
         # Geometries
-        self.pcd = map.pcd_o3d
-        self.bbox = map.oriented_bbox_o3d
-        self.centroids = map.centroids_o3d
-        self.pcd_names = [f"pcd_{i}" for i in range(len(map))]
-        self.bbox_names = [f"bbox_{i}" for i in range(len(map))]
-        self.centroid_names = [f"centroid_{i}" for i in range(len(map))]
-        self.label_names = [str(i) for i in range(len(map))]
-        self.label_coord = [o.centroid for o in map]
+        self.pcd = pcd_o3d
+        self.bbox = [pcd.get_oriented_bounding_box() for pcd in self.pcd]
+
+        self.pcd_names = [f"pcd_{i}" for i in range(len(self.pcd))]
+        self.bbox_names = [f"bbox_{i}" for i in range(len(self.pcd))]
+        self.centroid_names = [f"centroid_{i}" for i in range(len(self.pcd))]
+        self.label_names = [str(i) for i in range(len(self.pcd))]
+        self.centroids = []
+        self.label_coord = []
+        for p in self.pcd:
+            centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
+            c = np.mean(np.asarray(p.points), axis=0)
+            centroid.translate(c)
+            self.centroids.append(centroid)
+            self.label_coord.append(c)
+
+        # Change color to black
+        for b in self.bbox:
+            b.color = (0, 0, 0)
 
         # Colorings
         self.og_colors = [
@@ -45,14 +57,8 @@ class CallbackManager:
 
         # Similarities
         device = ft_extractor.device if ft_extractor is not None else "cpu"
-        self.map.semantic_tensor = map.semantic_tensor.to(device)
-        self.self_semantic_sim = self.map.similarity.semantic_similarity(
-            map.semantic_tensor, map.semantic_tensor
-        )
-        self.map.geometry_tensor = map.geometry_tensor.to(device)
-        self.self_geometric_sim = self.map.similarity.geometric_similarity(
-            map.geometry_tensor, map.geometry_tensor
-        )
+        self.semantic_tensor = torch.from_numpy(clip_ft).to(device)
+        self.semantic_sim = CosineSimilarity01()
 
         # Toggles
         self.bbox_toggle = False
@@ -133,39 +139,15 @@ class CallbackManager:
             return
         query = input("Enter query: ")
         query_ft = self.ft_extractor.encode_text([query])
-        self.sim_query = self.map.similarity.semantic_similarity(
-            self.map.semantic_tensor.float(), query_ft
-        )
+        self.sim_query = self.semantic_sim(query_ft, self.semantic_tensor)
         self.sim_query = self.sim_query.squeeze().cpu().numpy()
         self.toggle_sim(vis)
 
-    def toggle_pairwise_inspect(self, vis):
-        obj1 = input("First Object Id: ")
-        obj2 = input("Second Object Id: ")
-        obj1, obj2 = int(obj1), int(obj2)
-        for i, (p, c, color) in enumerate(
-            zip(self.pcd, self.centroids, self.random_colors)
-        ):
-            if i == obj1 or i == obj2:
-                p.paint_uniform_color(color)
-                c.paint_uniform_color(color)
-            else:
-                p.paint_uniform_color([0, 0, 0])
-                c.paint_uniform_color([0, 0, 0])
-        self.update_geometries(vis, self.pcd_names, self.pcd)
-        if self.centroid_toggle:
-            self.update_geometries(vis, self.centroid_names, self.centroids)
-        log.info(f"Object {obj1}: {self.map[obj1]}")
-        log.info(f"Object {obj2}: {self.map[obj2]}")
-        log.info(f"Geometric Similarity: {self.self_geometric_sim[obj1, obj2]}")
-        log.info(f"Semantic Similarity: {self.self_semantic_sim[obj1, obj2]}")
-
     def view(self, vis):
+        pass
         obj_id = input("Object Id: ")
         obj_id = int(obj_id)
-        obj = self.map[obj_id]
-        obj.view_images_caption()
-        plt.show()
+        pass
 
     def register_callbacks(self, vis):
         if self.mode == "keycallback":
@@ -175,7 +157,6 @@ class CallbackManager:
             vis.register_key_callback(ord("B"), self.toggle_bbox)
             vis.register_key_callback(ord("C"), self.toggle_centroids)
             vis.register_key_callback(ord("Q"), self.query)
-            vis.register_key_callback(ord("P"), self.toggle_pairwise_inspect)
             vis.register_key_callback(ord("V"), self.view)
         else:
             vis.add_action("RGB", self.toggle_rgb)
@@ -185,19 +166,44 @@ class CallbackManager:
             vis.add_action("Toggle Centroid", self.toggle_centroids)
             vis.add_action("Toggle Number", self.toggle_numbers)
             vis.add_action("CLIP Query", self.query)
-            vis.add_action("Pairwise Inspect", self.toggle_pairwise_inspect)
             vis.add_action("View Segments", self.view)
+
+
+def load_point_cloud(path):
+    path = Path(path)
+    pcd = o3d.io.read_point_cloud(str(path / "point_cloud.pcd"))
+
+    with open(path / "segments_anno.json", "r") as f:
+        segments_anno = json.load(f)
+
+    # Build a pcd with random colors
+    pcd_o3d = []
+
+    for ann in segments_anno["segGroups"]:
+        obj = pcd.select_by_index(ann["segments"])
+        pcd_o3d.append(obj)
+
+    return pcd_o3d
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="visualizer")
 def main(cfg: DictConfig):
     set_seed(cfg.seed)
-    main_map = load_map(cfg.map_path)
-    log.info(f"Loading map with a total of {len(main_map)} objects")
-    ft_extractor = hydra.utils.instantiate(cfg.ft_extraction) if hasattr(cfg, "ft_extraction") else None
+    path = Path(cfg.map_path)
+    clip_ft = np.load(path / "clip_features.npy")
+    pcd_o3d = load_point_cloud(path)
+    ft_extractor = (
+        hydra.utils.instantiate(cfg.ft_extraction)
+        if hasattr(cfg, "ft_extraction")
+        else None
+    )
+
+    log.info(f"Loading map with a total of {len(pcd_o3d)} objects")
 
     # Callback Manager
-    manager = CallbackManager(main_map, ft_extractor, mode=cfg.mode)
+    manager = CallbackManager(
+        pcd_o3d=pcd_o3d, clip_ft=clip_ft, ft_extractor=ft_extractor, mode=cfg.mode
+    )
 
     # Visualizer
     if cfg.mode == "keycallback":

@@ -67,7 +67,7 @@ def main(cfg: DictConfig):
     log.info("Objects in final map: %d" % len(main_map))
     log.info(f"fps: {len(dataset) / (stop - start):.2f}")
 
-    if  cfg.caption and hasattr(cfg, "vlm_caption"):
+    if cfg.caption and hasattr(cfg, "vlm_caption"):
         log.info("Captioning objects...")
         captioner = hydra.utils.instantiate(cfg.vlm_caption)
         captioner.caption_map(main_map)

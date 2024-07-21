@@ -42,19 +42,21 @@ class ChamferDist(GeometricSimilarity):
         return 1 / (result + 1e-6)
 
 
-def radius_overlap(pcds_1: torch.Tensor, pcds_2: torch.Tensor, eps: float) -> Tuple[torch.Tensor]:
-        pcds_1 = pcds_1.unsqueeze(1)
-        pcds_1 = pcds_1.unsqueeze(3)
-        pcds_2 = pcds_2.unsqueeze(0)
-        pcds_2 = pcds_2.unsqueeze(2)
+def radius_overlap(
+    pcds_1: torch.Tensor, pcds_2: torch.Tensor, eps: float
+) -> Tuple[torch.Tensor]:
+    pcds_1 = pcds_1.unsqueeze(1)
+    pcds_1 = pcds_1.unsqueeze(3)
+    pcds_2 = pcds_2.unsqueeze(0)
+    pcds_2 = pcds_2.unsqueeze(2)
 
-        dist = ((pcds_1 - pcds_2) ** 2).sum(dim=-1)
+    dist = ((pcds_1 - pcds_2) ** 2).sum(dim=-1)
 
-        is_close = torch.sqrt(dist) < eps
-        d1 = is_close.any(dim=3).to(torch.float).mean(dim=2)
-        d2 = is_close.any(dim=2).to(torch.float).mean(dim=2)
+    is_close = torch.sqrt(dist) < eps
+    d1 = is_close.any(dim=3).to(torch.float).mean(dim=2)
+    d2 = is_close.any(dim=2).to(torch.float).mean(dim=2)
 
-        return d1, d2
+    return d1, d2
 
 
 class RadiusOverlap(GeometricSimilarity):
@@ -73,7 +75,9 @@ class RadiusOverlap(GeometricSimilarity):
 
         d1_buffer, d2_buffer = list(), list()
 
-        n_batches = main_geometry.shape[0] // self.batch_size + 1 if self.batch_size > 0 else 1
+        n_batches = (
+            main_geometry.shape[0] // self.batch_size + 1 if self.batch_size > 0 else 1
+        )
 
         for batch_main_geometry in torch.tensor_split(main_geometry, n_batches, dim=0):
             d1, d2 = radius_overlap(batch_main_geometry, other_geometry, self.eps)
@@ -93,4 +97,3 @@ class RadiusOverlap(GeometricSimilarity):
             raise ValueError(f"Unknown aggregation method {self.agg}")
 
         return result
-

@@ -97,9 +97,7 @@ class CombinedSimilarity:
             & (combined > self.sim_thresh)
         )
 
-        combined_masked = torch.where(
-            mergeable, combined, -torch.ones_like(combined)
-        )
+        combined_masked = torch.where(mergeable, combined, -torch.ones_like(combined))
 
         merge = mergeable.any(dim=0).cpu().tolist()
         match_idx = combined_masked.argmax(dim=0).cpu().tolist()
