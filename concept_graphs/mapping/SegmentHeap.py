@@ -1,3 +1,4 @@
+from typing import List
 import heapq
 from .Segment import Segment
 
@@ -36,3 +37,6 @@ class SegmentHeap:
             if segment_added:
                 result = True
         return result
+
+    def get_sorted(self) -> List[Segment]:
+        return sorted(self.heap, key=lambda x: x.score, reverse=True)
