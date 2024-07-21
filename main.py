@@ -95,6 +95,7 @@ def main(cfg: DictConfig):
     main_map.export(output_dir_map)
 
     # Save entire map as a pickle object
+    main_map.to("cpu")
     map_path = output_dir_map / "map.pkl"
     main_map.save(map_path)
 
