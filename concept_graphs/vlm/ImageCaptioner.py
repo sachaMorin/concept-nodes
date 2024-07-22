@@ -18,6 +18,6 @@ class ImageCaptioner:
 
     def caption_map(self, map: "ObjectMap") -> None:
         for obj in map:
-            views = [v.rgb for v in obj.segments]
+            views = [v.rgb for v in obj.segments.get_sorted()]
             obj.caption = self(views)
             log.info(obj.caption)

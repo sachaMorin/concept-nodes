@@ -45,9 +45,7 @@ class OpenAICaptioner(ImageCaptioner):
 
     def __call__(self, images: [np.ndarray]) -> str:
         if len(images) > self.max_images:
-            # Subsample images
-            indices = np.random.choice(len(images), self.max_images, replace=False)
-            images = [images[i] for i in indices]
+            images = images[: self.max_images]
 
         base64_images = self.encode_images(images)
         messages = [
