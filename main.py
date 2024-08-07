@@ -98,7 +98,7 @@ def main(cfg: DictConfig):
     OmegaConf.save(cfg, output_dir_map / "config.yaml")
 
     # Create symlink to latest map
-    symlink = output_dir / "latest_map.pkl"
+    symlink = output_dir / "latest_map"
     symlink.unlink(missing_ok=True)
     os.symlink(output_dir_map, symlink)
     log.info(f"Created symlink to latest map at {symlink}")
