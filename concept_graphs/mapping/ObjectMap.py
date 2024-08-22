@@ -4,6 +4,7 @@ import torch
 import open3d as o3d
 from .Object import Object, ObjectFactory
 from .similarity.Similarity import Similarity
+from .utils import pairs_to_connected_components
 
 
 class ObjectMap:
@@ -148,11 +149,11 @@ class ObjectMap:
 
         self.collate()
 
-    def match_similarities(
-            self, other: "ObjectMap", mask_diagonal: bool = False
+    def similarity_with(
+            self, other: "ObjectMap", mask_diagonal: bool,
     ) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
-        return self.similarity(
+        mergeable, merge_idx = self.similarity(
             main_semantic=self.semantic_tensor,
             main_geometry=self.geometry_tensor,
             other_semantic=other.semantic_tensor,
@@ -160,18 +161,20 @@ class ObjectMap:
             mask_diagonal=mask_diagonal,
         )
 
+        return mergeable, merge_idx
+
     def __iadd__(self, other: "ObjectMap"):
         if len(self) == 0:
             return other
         if len(other) == 0:
             return self
 
-        merge, match_idx = self.match_similarities(other)
+        mergeable, merge_idx = self.similarity_with(other, mask_diagonal=False)
 
         for i, obj in enumerate(other):
             obj.timestep_created = self.n_updates
-            if merge[i]:
-                self[match_idx[i]] += obj
+            if mergeable[i]:
+                self[merge_idx[i]] += obj
             else:
                 self.append(obj)
 
@@ -186,18 +189,23 @@ class ObjectMap:
         if len(self) == 0:
             return self
 
-        merge, match_idx = self.match_similarities(self, mask_diagonal=True)
-        to_delete = list()
+        mergeable, merge_idx = self.similarity_with(self, mask_diagonal=True)
 
-        for i, obj in enumerate(self):
-            if i not in to_delete and merge[i]:
-                j = match_idx[i]
-                self[i] += self[j]
-                self[j] = self[i]  # Reference to i
-                if j not in to_delete:
-                    to_delete.append(j)
+        if not np.any(mergeable):
+            return
 
-        for i in to_delete:
+        n = len(self)
+        pairs = [(i, merge_idx[i]) for i in range(n) if mergeable[i]]
+        connected_components = pairs_to_connected_components(pairs, n)
+
+        has_been_merged = list()
+        for component in connected_components:
+            if len(component) > 1:
+                for j in range(1, len(component)):
+                    self[component[0]] += self[component[j]]
+                    has_been_merged.append(component[j])
+
+        for i in has_been_merged:
             self.pop(i)
 
         self.collate_objects()
