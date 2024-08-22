@@ -17,6 +17,7 @@ def box_xywh_to_xyxy(box_xywh: torch.Tensor) -> torch.Tensor:
     box_xyxy = torch.clone(box_xywh)
     box_xyxy[:, 2] = box_xyxy[:, 0] + box_xyxy[:, 2]
     box_xyxy[:, 3] = box_xyxy[:, 1] + box_xyxy[:, 3]
+    box_xyxy = box_xyxy.int()
     return box_xyxy
 
 
