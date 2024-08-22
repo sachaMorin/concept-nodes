@@ -27,7 +27,7 @@ def rgbd_to_object_pcd(
     rgb = rgb.reshape((H * W, 3))
     points = points.reshape((H * W, 3))
     masks = masks.reshape((N, H * W))
-    not_truncated = (depth < depth_trunc).reshape((H * W))
+    not_truncated = ((0 < depth) & (depth < depth_trunc)).reshape((H * W))
 
     for m in masks:
         keep = m & not_truncated
