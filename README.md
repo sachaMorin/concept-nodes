@@ -49,10 +49,12 @@ We define specific experiments with the `algo` and `dataset` keys. To run the de
 version of the Replica dataset, try
 
 ```bash
-python3 main.py algo=CGDetector dataset=Replica_low
+python3 main.py algo=CGDetector dataset=Replica_low sim_thresh=0.89
 ```
 The map and other assets will be saved to `output_dir`. `main.py` will also create
 a symlink to the latest output in `output_dir/latest_map`.
+
+For the slower, SAM-only variant, try `algo=CG`.
 
 ## Parameters
 
