@@ -4,7 +4,12 @@ import torch
 
 class GeometricSimilarity:
     def __call__(
-        self, main_pcd: torch.Tensor, main_centroid: torch.Tensor, other_pcd: torch.Tensor, other_centroid: torch.Tensor, symmetrical: bool
+        self,
+        main_pcd: torch.Tensor,
+        main_centroid: torch.Tensor,
+        other_pcd: torch.Tensor,
+        other_centroid: torch.Tensor,
+        symmetrical: bool,
     ) -> torch.Tensor:
         raise NotImplementedError
 
@@ -40,7 +45,9 @@ class Similarity:
         other_centroid: torch.Tensor,
         mask_diagonal: bool,
     ) -> Tuple[List[bool], List[int]]:
-        geometric_sim = self.geometric_similarity(main_pcd, main_centroid, other_pcd, other_centroid, mask_diagonal)
+        geometric_sim = self.geometric_similarity(
+            main_pcd, main_centroid, other_pcd, other_centroid, mask_diagonal
+        )
         semantic_sim = self.semantic_similarity(main_semantic, other_semantic)
 
         if mask_diagonal:
@@ -87,7 +94,9 @@ class CombinedSimilarity:
         other_centroid: torch.Tensor,
         mask_diagonal: bool,
     ) -> Tuple[List[bool], List[int]]:
-        geometric_sim = self.geometric_similarity(main_pcd, main_centroid, other_pcd, other_centroid, mask_diagonal)
+        geometric_sim = self.geometric_similarity(
+            main_pcd, main_centroid, other_pcd, other_centroid, mask_diagonal
+        )
         semantic_sim = self.semantic_similarity(main_semantic, other_semantic)
 
         if mask_diagonal:

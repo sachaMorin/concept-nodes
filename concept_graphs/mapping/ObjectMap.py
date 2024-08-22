@@ -110,10 +110,10 @@ class ObjectMap:
 
     def collate_geometry(self):
         if len(self):
-            self.pcd_tensors = [torch.from_numpy(p).to(self.device) for p in self.pcd_np]
-            self.centroid_tensor = torch.from_numpy(self.centroids_np).to(
-                self.device
-            )
+            self.pcd_tensors = [
+                torch.from_numpy(p).to(self.device) for p in self.pcd_np
+            ]
+            self.centroid_tensor = torch.from_numpy(self.centroids_np).to(self.device)
         else:
             self.object_pcds = None
             self.centroid_tensor = None
@@ -335,8 +335,10 @@ class ObjectMap:
                 label=obj.tag,
                 caption=obj.caption,
                 segments=list(range(point_counter, point_counter + n_points_object)),
-                camera_poses=[s.camera_pose.tolist() for s in obj.segments.get_sorted()],
-                centroid = np.mean(np.asarray(obj.pcd.points), axis=0).tolist()
+                camera_poses=[
+                    s.camera_pose.tolist() for s in obj.segments.get_sorted()
+                ],
+                centroid=np.mean(np.asarray(obj.pcd.points), axis=0).tolist(),
             )
             annotations.append(obj_ann)
             point_counter += n_points_object
@@ -363,7 +365,10 @@ class ObjectMap:
             for j, seg in enumerate(obj.segments.get_sorted()):
                 rgb = seg.rgb
                 mask = seg.mask * 255
-                cv2.imwrite(str(path_rgb / f"{str(j).zfill(3)}.png"), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+                cv2.imwrite(
+                    str(path_rgb / f"{str(j).zfill(3)}.png"),
+                    cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
+                )
                 cv2.imwrite(str(path_mask / f"{str(j).zfill(3)}.png"), mask)
 
     def to(self, device: str):

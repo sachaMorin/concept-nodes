@@ -86,11 +86,13 @@ class Object:
         self.update_geometry_np()
 
     def update_geometry_np(self):
-        self.pcd_np = np.asarray(self.pcd.points) # No copy
+        self.pcd_np = np.asarray(self.pcd.points)  # No copy
         self.centroid = np.mean(self.pcd_np, axis=0)
 
         if len(self.pcd_np) > self.max_points_pcd:
-            sub = np.random.choice(len(self.pcd_np), size=self.max_points_pcd, replace=False)
+            sub = np.random.choice(
+                len(self.pcd_np), size=self.max_points_pcd, replace=False
+            )
             self.pcd_np = self.pcd_np[sub]
 
     def update_semantic_ft(self):
