@@ -72,7 +72,7 @@ def main(cfg: DictConfig):
         captioner = hydra.utils.instantiate(cfg.vlm_caption)
         captioner.caption_map(main_map)
 
-    if cfg.caption and hasattr(cfg, "vlm_tag"):
+    if cfg.tag and hasattr(cfg, "vlm_tag"):
         log.info("Tagging objects...")
         captioner = hydra.utils.instantiate(cfg.vlm_tag)
         captioner.caption_map(main_map)

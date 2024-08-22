@@ -15,6 +15,7 @@ final_min_segments: ???
 device: cuda
 debug: false
 caption: false
+tag: false
 save_map: true
 seed: 123
 
