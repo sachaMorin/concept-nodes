@@ -1,9 +1,11 @@
+import os
 from typing import List, Dict, Tuple
 import numpy as np
 import torch
 import open3d as o3d
 from pathlib import Path
 import json
+import cv2
 from .Object import Object, ObjectFactory
 from .similarity.Similarity import Similarity
 from .utils import pairs_to_connected_components
@@ -341,6 +343,7 @@ class ObjectMap:
                 label=obj.tag,
                 caption=obj.caption,
                 segments=list(range(point_counter, point_counter + n_points_object)),
+                camera_poses=[s.camera_pose.tolist() for s in obj.segments.get_sorted()]
             )
             annotations.append(obj_ann)
             point_counter += n_points_object
@@ -356,3 +359,16 @@ class ObjectMap:
         # Save semantic tensor
         semantics = self.semantic_tensor.cpu().numpy()
         np.save(path / "clip_features.npy", semantics)
+
+        # Save object images
+        for i, obj in enumerate(self):
+            path_rgb = path / "segments" / str(i) / "rgb"
+            path_mask = path / "segments" / str(i) / "mask"
+            os.makedirs(path_rgb, exist_ok=True)
+            os.makedirs(path_mask, exist_ok=True)
+
+            for j, seg in enumerate(obj.segments.get_sorted()):
+                rgb = seg.rgb
+                mask = seg.mask * 255
+                cv2.imwrite(str(path_rgb / f"{str(j).zfill(3)}.png"), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+                cv2.imwrite(str(path_mask / f"{str(j).zfill(3)}.png"), mask)
