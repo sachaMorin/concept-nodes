@@ -3,6 +3,6 @@ defaults:
   - paths: paths
   - _self_
 
-map_path: ${output_dir}/latest_map.pkl
+map_path: ${output_dir}/latest_map
 seed: 42
 mode: "gui"
