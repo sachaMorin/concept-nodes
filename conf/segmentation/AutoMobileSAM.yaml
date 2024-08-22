@@ -14,4 +14,4 @@ mask_generator:
 
 model_type: "vit_t"
 checkpoint_path: ${cache_dir}/mobile_sam.pt
-device: cuda
+device: ${device}

@@ -5,7 +5,14 @@ defaults:
   - _self_
 
 name: ???
+sim_thresh: ???
+overlap_eps: ???
+voxel_size: ???
+denoising_eps: ???
+max_points_pcd: ???
 final_min_segments: ???
+
+device: cuda
 debug: false
 caption: false
 save_map: true

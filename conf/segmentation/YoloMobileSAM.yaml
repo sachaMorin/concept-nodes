@@ -1,10 +1,10 @@
 _target_: concept_graphs.perception.segmentation.YoloMobileSAM.YoloMobileSAM
 yolo_checkpoint_path: ${cache_dir}/yolov8s-world.pt
 yolo_class_path: ${cache_dir}/scannet200_classes.txt
-yolo_device: cuda
+yolo_device: ${device}
 sam_model_type: vit_t
 sam_checkpoint_path: ${cache_dir}/mobile_sam.pt
 sam_prompting: bbox
-sam_device: cuda
+sam_device: ${device}
 debug_images: ${debug}
 debug_dir: ${output_dir}/debug

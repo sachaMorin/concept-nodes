@@ -4,7 +4,7 @@ grid_height: 12
 grid_jitter: true
 model_type: "vit_t"
 checkpoint_path: ${cache_dir}/mobile_sam.pt
-device: cuda
+device: ${device}
 nms_iou_threshold: 0.5
 min_mask_area_px: 50
 min_bbox_side_px: 10

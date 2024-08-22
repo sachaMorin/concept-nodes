@@ -5,39 +5,30 @@ defaults:
   - override /segmentation: YoloMobileSAM
   - _self_
 
-final_min_segments: 5
 
 name: cg-detector
-
-perception:
-  segment_scoring_method: area
-  bg_sim_thresh: 0.615
-  bg_classes: null
-  crop_bg_color: null
+sim_thresh: 0.90
+overlap_eps: 0.025
+voxel_size: 0.025
+denoising_eps: 0.1
+max_points_pcd: 8000
+final_min_segments: 5
 
 mapping:
-  similarity:
-    _target_: concept_graphs.mapping.similarity.Similarity.CombinedSimilarity
-    geometric_similarity:
-      _target_: concept_graphs.mapping.similarity.geometric.PointCloudOverlapClosestK
-      agg: other
-      eps: 0.025
-      k: 10
-    semantic_similarity:
-      _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
-    geometric_sim_thresh: 0.0
-    semantic_sim_thresh: 0.0
-    sim_thresh: 0.90
   object_factory:
     _target_: concept_graphs.mapping.Object.RunningAverageObjectFactory
     semantic_mode: mean
-    max_points_pcd: 8000
-    downsampling_callback:
-      voxel_size: 0.025
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10
   self_merge_every: 5
   downsample_every: 5
   denoise_every: -1
-  device: cpu
+
+# No background filtering
+perception:
+  segment_scoring_method: area
+  bg_sim_thresh: 0.615
+  bg_classes: null
+  crop_bg_color: null
+
