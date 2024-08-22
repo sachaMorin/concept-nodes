@@ -18,7 +18,9 @@ log = logging.getLogger(__name__)
 @hydra.main(version_base=None, config_path="conf", config_name="main")
 def main(cfg: DictConfig):
     set_seed(cfg.seed)
+
     log.info(f"Running algo {cfg.name}...")
+
     log.info("Loading data and models...")
     dataset = hydra.utils.instantiate(cfg.dataset)
     dataloader = hydra.utils.instantiate(cfg.dataloader, dataset=dataset)
@@ -55,10 +57,6 @@ def main(cfg: DictConfig):
     main_map.downsample_objects()
     for _ in range(2):
         main_map.denoise_objects()
-        for obj in main_map:
-            obj.cluster_top_k(6)
-        main_map.collate_objects()
-        main_map.collate()
         main_map.self_merge()
     main_map.downsample_objects()
     main_map.filter_min_points_pcd()
@@ -75,8 +73,8 @@ def main(cfg: DictConfig):
 
     if cfg.tag and hasattr(cfg, "vlm_tag"):
         log.info("Tagging objects...")
-        captioner = hydra.utils.instantiate(cfg.vlm_tag)
-        captioner.caption_map(main_map)
+        tagger = hydra.utils.instantiate(cfg.vlm_tag)
+        tagger.caption_map(main_map)
 
     # Save visualizations and map
     if not cfg.save_map:
@@ -88,11 +86,11 @@ def main(cfg: DictConfig):
     output_dir_map = output_dir / f"{dataset.name}_{cfg.name}_{date_time}"
 
     log.info(f"Saving map, images and config to {output_dir_map}...")
-    grid_image_path = output_dir_map / "grid_image"
+    grid_image_path = output_dir_map / "object_viz"
     os.makedirs(grid_image_path, exist_ok=False)
     main_map.save_object_grids(grid_image_path)
 
-    # Also export some data to standard files for consumption by other packages
+    # Also export some data to standard files
     main_map.export(output_dir_map)
 
     # Hydra config
