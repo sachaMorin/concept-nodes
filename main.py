@@ -94,18 +94,13 @@ def main(cfg: DictConfig):
     # Also export some data to standard files for consumption by other packages
     main_map.export(output_dir_map)
 
-    # Save entire map as a pickle object
-    main_map.to("cpu")
-    map_path = output_dir_map / "map.pkl"
-    main_map.save(map_path)
-
     # Hydra config
     OmegaConf.save(cfg, output_dir_map / "config.yaml")
 
     # Create symlink to latest map
     symlink = output_dir / "latest_map.pkl"
     symlink.unlink(missing_ok=True)
-    os.symlink(map_path, symlink)
+    os.symlink(output_dir_map, symlink)
     log.info(f"Created symlink to latest map at {symlink}")
 
     # Move debug directory if it exists
