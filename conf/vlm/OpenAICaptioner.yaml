@@ -1,11 +1,4 @@
+defaults:
+  - base_captioner
 _target_: concept_graphs.vlm.OpenAICaptioner.OpenAICaptioner
-system_prompt: "You are a helpful assistant that describes images in a few words. You will be provided with up to 4 views of the same object. Describe the object in the crops."
-user_query: "Describe the object."
-max_images: 4
-tag: false
-bg_mask_mode: no_mask
-allow_no_object_pred: true
-no_object_prompt: "If you believe there is no central object in the images or the images depict a background element, output BACKGROUND."
-force_reponse_prefix: true
-prefix: "The central object is"
 model: gpt-4o
