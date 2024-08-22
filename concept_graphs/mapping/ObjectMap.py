@@ -44,7 +44,8 @@ class ObjectMap:
         self.objects: Dict[int, Object] = dict()
 
         self.semantic_tensor: torch.Tensor = None
-        self.geometry_tensor: torch.Tensor = None
+        self.pcd_tensors: List[torch.Tensor] = None
+        self.centroid_tensor: torch.Tensor = None
 
         # Map from index in collated tensors (e.g., semantic_tensor, geometry_tensor) to object key in self.objects
         self.key_map = []
@@ -53,8 +54,10 @@ class ObjectMap:
         self.device = device
         if self.semantic_tensor is not None:
             self.semantic_tensor = self.semantic_tensor.to(device)
-        if self.geometry_tensor is not None:
-            self.geometry_tensor = self.geometry_tensor.to(device)
+        if self.centroid_tensor is not None:
+            self.centroid_tensor = self.centroid_tensor.to(device)
+        if self.pcd_tensors is not None:
+            self.pcd_tensors = [p.to(device) for p in self.pcd_tensors]
 
     def __len__(self):
         return len(self.objects)
@@ -85,15 +88,13 @@ class ObjectMap:
 
     def collate_geometry(self):
         if len(self):
-            geometries = list()
-            for obj in self:
-                geometries.append(obj.geometry)
-
-            self.geometry_tensor = torch.from_numpy(np.stack(geometries, axis=0)).to(
+            self.pcd_tensors = [torch.from_numpy(p).to(self.device) for p in self.pcd_np]
+            self.centroid_tensor = torch.from_numpy(self.centroids_np).to(
                 self.device
             )
         else:
-            self.geometry_tensor = None
+            self.object_pcds = None
+            self.centroid_tensor = None
 
     def collate_semantic_ft(self):
         if len(self):
@@ -161,9 +162,11 @@ class ObjectMap:
         """Compute similarities with objects from another map."""
         mergeable, merge_idx = self.similarity(
             main_semantic=self.semantic_tensor,
-            main_geometry=self.geometry_tensor,
+            main_pcd=self.pcd_tensors,
+            main_centroid=self.centroid_tensor,
             other_semantic=other.semantic_tensor,
-            other_geometry=other.geometry_tensor,
+            other_pcd=other.pcd_tensors,
+            other_centroid=other.centroid_tensor,
             mask_diagonal=mask_diagonal,
         )
 
@@ -281,6 +284,10 @@ class ObjectMap:
         return [o.pcd for o in self]
 
     @property
+    def pcd_np(self) -> List[np.ndarray]:
+        return [o.pcd_np for o in self]
+
+    @property
     def oriented_bbox_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
         bbox = [o.pcd.get_oriented_bounding_box() for o in self]
 
@@ -303,6 +310,10 @@ class ObjectMap:
             centroids = []
 
         return centroids
+
+    @property
+    def centroids_np(self) -> List[np.ndarray]:
+        return np.stack([o.centroid for o in self], axis=0)
 
     def draw_geometries(self, random_colors: bool = False) -> None:
         pcd = self.pcd_o3d

@@ -18,22 +18,20 @@ class Object:
         pcd_points: np.ndarray,
         pcd_rgb: np.ndarray,
         segment_heap_size: int,
-        geometry_mode: str,
         semantic_mode: str,
         timestep_created: int,
-        n_sample_pcd: int = 20,
         denoising_callback: Union[PointCloudCallback, None] = None,
         downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
-        self.geometry_mode = geometry_mode
         self.timestep_created = timestep_created
-        self.n_sample_pcd = n_sample_pcd
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
 
-        self.geometry = None
+        self.pcd = None
+        self.pcd_np = None
+        self.centroid = None
         self.semantic_ft = None
         self.segments = SegmentHeap(max_size=segment_heap_size)
         self.n_segments = 1
@@ -74,36 +72,17 @@ class Object:
     def __repr__(self):
         return f"Object with {len(self.segments)} segments. Detected a total of {self.n_segments} times."
 
-    @property
-    def centroid(self):
-        return np.mean(self.pcd.points, axis=0)
-
-    def update_pcd(self):
+    def update_geometry(self):
+        """Pull segment point clouds into one object-level point cloud"""
         points = np.concatenate([s.pcd_points for s in self.segments], axis=0)
         colors = np.concatenate([s.pcd_rgb for s in self.segments], axis=0)
         self.pcd.points = o3d.utility.Vector3dVector(points)
         self.pcd.colors = o3d.utility.Vector3dVector(colors)
 
-    def update_geometry(self):
-        # Update geometry
-        if self.geometry_mode == "centroid":
-            self.geometry = self.centroid
-        elif self.geometry_mode == "pcd":
-            points = np.asarray(self.pcd.points)
-            n_points = points.shape[0]
+        self.downsample()
 
-            if n_points < self.n_sample_pcd:
-                # Sample n_sample_pcd - n_points points with replacement
-                idx = np.random.choice(
-                    n_points, self.n_sample_pcd - n_points, replace=True
-                )
-                self.geometry = np.concatenate([points, points[idx]], axis=0)
-            else:
-                self.geometry = points[
-                    np.random.choice(n_points, self.n_sample_pcd, replace=False)
-                ]
-        else:
-            raise ValueError(f"Invalid geometry mode {self.geometry_mode}.")
+        self.pcd_np = np.asarray(self.pcd.points) # No copy
+        self.centroid = np.mean(self.pcd_np, axis=0)
 
     def update_semantic_ft(self):
         """Pick the representative semantic vector from the segments."""
@@ -123,8 +102,6 @@ class Object:
 
     def collate(self):
         if not self.is_collated:
-            self.update_pcd()
-            # self.downsample()
             self.update_geometry()
             self.update_semantic_ft()
 
@@ -190,21 +167,25 @@ class Object:
 class RunningAverageObject(Object):
     """CG object from the original paper. Semantic feature average. Append pcd.
 
-    We still use the heap to store images and masks, but nothing else."""
+    We still use the segment heap to store images and masks, but nothing else."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.semantic_ft = self.segments[0].semantic_ft
 
+        # We track an object-level point cloud so we don't need the segment point clouds
         self.segments[0].pcd_points = None
         self.segments[0].pcd_rgb = None
         self.segments[0].semantic_ft = None
 
-    def update_semantic_ft(self):
-        pass
+    def update_geometry(self):
+        self.downsample()
 
-    def update_pcd(self):
+        self.pcd_np = np.asarray(self.pcd.points) # No copy
+        self.centroid = np.mean(self.pcd_np, axis=0)
+
+    def update_semantic_ft(self):
         pass
 
     def cluster_top_k(self, k: int):
@@ -221,6 +202,7 @@ class RunningAverageObject(Object):
             self_ratio * self.semantic_ft + other_ratio * other.semantic_ft
         )
         self.semantic_ft = self.semantic_ft / np.linalg.norm(self.semantic_ft, 2)
+
         self.pcd += other.pcd
 
         self.n_segments += other.n_segments

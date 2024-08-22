@@ -28,8 +28,6 @@ mapping:
     semantic_sim_thresh: .75
   object_factory:
     semantic_mode: multi
-    geometry_mode: pcd
-    n_sample_pcd: 200
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10

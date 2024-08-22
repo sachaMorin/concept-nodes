@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 import torch
 from .Similarity import GeometricSimilarity
 
@@ -42,7 +42,7 @@ class ChamferDist(GeometricSimilarity):
         return 1 / (result + 1e-6)
 
 
-def radius_overlap(
+def radius_overlap_old(
     pcds_1: torch.Tensor, pcds_2: torch.Tensor, eps: float
 ) -> Tuple[torch.Tensor]:
     pcds_1 = pcds_1.unsqueeze(1)
@@ -58,6 +58,21 @@ def radius_overlap(
 
     return d1, d2
 
+def point_cloud_overlap(
+    pcd_1: torch.Tensor, pcd_2: torch.Tensor, eps: float
+) -> Tuple[torch.Tensor]:
+    pcd_1 = pcd_1.unsqueeze(1) # (n1, 1, 3)
+    pcd_2 = pcd_2.unsqueeze(0) # (1, n2, 3)
+
+    dist = ((pcd_1 - pcd_2) ** 2).sum(dim=-1) # (n1, n2)
+
+    is_close = torch.sqrt(dist) < eps
+
+    d1 = is_close.any(dim=1).to(torch.float).mean()
+    d2 = is_close.any(dim=0).to(torch.float).mean()
+
+    return d1, d2
+
 
 class RadiusOverlap(GeometricSimilarity):
     def __init__(self, eps: float, agg: str, batch_size: int = 20):
@@ -66,7 +81,7 @@ class RadiusOverlap(GeometricSimilarity):
         self.batch_size = batch_size
 
     def __call__(
-        self, main_geometry: torch.Tensor, other_geometry: torch.Tensor
+        self, 
     ) -> torch.Tensor:
         if main_geometry.ndim == 2:
             main_geometry = main_geometry.unsqueeze(0)
@@ -95,5 +110,42 @@ class RadiusOverlap(GeometricSimilarity):
             result = torch.max(d1, d2)
         else:
             raise ValueError(f"Unknown aggregation method {self.agg}")
+
+        return result
+
+
+class PointCloudOverlapClosestK(GeometricSimilarity):
+    """Point Cloud Overlap with closest k other point clouds in terms of centroid distance."""
+    def __init__(self, eps: float, agg: str, k: int = 3):
+        self.eps = eps
+        self.agg = agg
+        self.k = min(2, k)
+
+    def __call__(
+        self, 
+        main_pcd: List[torch.Tensor],
+        main_centroid: torch.Tensor,
+        other_pcd: List[torch.Tensor],
+        other_centroid: torch.Tensor,
+    ) -> torch.Tensor:
+
+        dist_centroids = torch.cdist(main_centroid, other_centroid)
+        closest_k = torch.topk(dist_centroids, k=self.k, dim=1, largest=False).indices
+        result = torch.zeros(len(main_pcd), len(other_pcd), device=main_centroid.device)
+
+        for main_i, main_pcd_i in enumerate(main_pcd):
+            for other_i in closest_k[main_i]:
+                sim1, sim2 = point_cloud_overlap(main_pcd_i, other_pcd[other_i], eps=self.eps)
+
+                if self.agg == "sum":
+                    sim = sim1 + sim2
+                elif self.agg == "mean":
+                    sim = (sim1 + sim2) / 2
+                elif self.agg == "max":
+                    sim = torch.max(sim1, sim2)
+                else:
+                    raise ValueError(f"Unknown aggregation method {self.agg}")
+
+                result[main_i, other_i] = sim
 
         return result

@@ -7,7 +7,6 @@ _target_: concept_graphs.mapping.ObjectMap.ObjectMap
 object_factory:
   _target_: concept_graphs.mapping.Object.ObjectFactory
   segment_heap_size: 12
-  geometry_mode: "pcd"
 
 n_min_segments: 3
 min_points_pcd: 50
