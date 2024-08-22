@@ -13,6 +13,9 @@ from .segmentation.utils import (
     mask_subtract_contained,
 )
 
+def filter_list(list: List, mask: List[bool]):
+    return [o for (o, m) in zip(list, mask) if m]
+
 
 class PerceptionPipeline:
     def __init__(
@@ -27,7 +30,8 @@ class PerceptionPipeline:
         bg_classes: Union[List[str], None] = None,
         bg_sim_thresh: float = 1.0,
         crop_bg_color: Union[int, None] = None,
-        min_mask_area_px: int = 25,
+        min_mask_area_px: int = 50,
+        min_points_pcd: int = 50,
         debug_images: bool = False,
         debug_dir: str = ".",
     ):
@@ -42,6 +46,7 @@ class PerceptionPipeline:
         self.bg_classes = bg_classes
         self.bg_sim_thresh = bg_sim_thresh
         self.min_mask_area_px = min_mask_area_px
+        self.min_points_pcd = min_points_pcd
         self.debug_images = debug_images
         self.debug_dir = Path(debug_dir)
         self.debug_counter = 0
@@ -130,12 +135,15 @@ class PerceptionPipeline:
             plt.close()
             self.debug_counter += 1
 
+        # Filter empty point clouds. They can happen at this stage because of depth truncation
+        mask = [len(p) > self.min_points_pcd for p in pcd_points]
+
         return dict(
-            rgb_crops=rgb_crops,
-            mask_crops=mask_crops,
-            features=features,
-            pcd_points=pcd_points,
-            pcd_rgb=pcd_rgb,
-            scores=scores,
-            is_bg=bg,
+            rgb_crops=filter_list(rgb_crops, mask),
+            mask_crops=filter_list(mask_crops, mask),
+            features=features[mask],
+            pcd_points=filter_list(pcd_points, mask),
+            pcd_rgb=filter_list(pcd_rgb, mask),
+            scores=scores[mask],
+            is_bg=bg[mask],
         )

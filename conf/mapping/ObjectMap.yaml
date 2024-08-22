@@ -9,10 +9,11 @@ object_factory:
   segment_heap_size: 12
   geometry_mode: "pcd"
 
-self_merge_every: 10
 n_min_segments: 3
+min_points_pcd: 50
 grace_min_segments: 30
 filter_min_every: -1
 collate_objects_every: 5
+self_merge_every: 10
 
 device: cuda

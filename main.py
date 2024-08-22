@@ -59,6 +59,7 @@ def main(cfg: DictConfig):
         main_map.collate()
         main_map.self_merge()
     main_map.downsample_objects()
+    main_map.filter_min_points_pcd()
 
     stop = time.time()
     log.info("Objects in final map: %d" % len(main_map))
