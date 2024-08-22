@@ -20,14 +20,14 @@ class Object:
         segment_heap_size: int,
         semantic_mode: str,
         timestep_created: int,
-        max_point_pcd: int = 1200,
+        max_points_pcd: int = 1200,
         denoising_callback: Union[PointCloudCallback, None] = None,
         downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
         self.timestep_created = timestep_created
-        self.max_point_pcd = max_point_pcd
+        self.max_points_pcd = max_points_pcd
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
 
@@ -89,8 +89,8 @@ class Object:
         self.pcd_np = np.asarray(self.pcd.points) # No copy
         self.centroid = np.mean(self.pcd_np, axis=0)
 
-        if len(self.pcd_np) > self.max_point_pcd:
-            sub = np.random.choice(len(self.pcd_np), size=self.max_point_pcd, replace=False)
+        if len(self.pcd_np) > self.max_points_pcd:
+            sub = np.random.choice(len(self.pcd_np), size=self.max_points_pcd, replace=False)
             self.pcd_np = self.pcd_np[sub]
 
     def update_semantic_ft(self):
