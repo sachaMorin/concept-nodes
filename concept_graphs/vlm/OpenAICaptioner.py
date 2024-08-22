@@ -9,21 +9,10 @@ log = logging.getLogger(__name__)
 
 
 class OpenAICaptioner(ImageCaptioner):
-    def __init__(self, max_images: int, model: str = "gpt-4o", white_bg: bool = False):
-        super().__init__(max_images)
+    def __init__(self, model: str, **kwargs):
+        super().__init__(**kwargs)
         self.model = model
         self.client = openai.OpenAI()
-        self.white_bg = white_bg
-        self.role = (
-            "You are a helpful assistant that describes images in a few words. "
-            "You will be provided with multiple views of the same object. "
-        )
-        if white_bg:
-            self.role += (
-                "The background has been whited out to focus on the object. "
-                "Some foreground objects may also have been removed. Describe the object only."
-            )
-        self.role += "Begin response with 'The object is'."
 
     def encode_images(self, images: [np.ndarray]) -> [str]:
         # To RGB
@@ -33,27 +22,17 @@ class OpenAICaptioner(ImageCaptioner):
             for img in images
         ]
 
-    def postprocess_response(self, response: str) -> str:
-        # Check if it begins with "The object is"
-        if response.startswith("The object is"):
-            response = response[13:]
-
-        if response.endswith("."):
-            response = response[:-1]
-
-        return response
-
     def __call__(self, images: [np.ndarray]) -> str:
         if len(images) > self.max_images:
             images = images[: self.max_images]
 
         base64_images = self.encode_images(images)
         messages = [
-            {"role": "system", "content": self.role},
+            {"role": "system", "content": self.full_system_prompt},
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "What's the object?"},
+                    {"type": "text", "text": self.user_query},
                     *[
                         {
                             "type": "image_url",
