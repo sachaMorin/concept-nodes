@@ -1,3 +1,4 @@
+from typing import Tuple
 import torch
 from .Similarity import GeometricSimilarity
 
@@ -41,10 +42,26 @@ class ChamferDist(GeometricSimilarity):
         return 1 / (result + 1e-6)
 
 
+def radius_overlap(pcds_1: torch.Tensor, pcds_2: torch.Tensor, eps: float) -> Tuple[torch.Tensor]:
+        pcds_1 = pcds_1.unsqueeze(1)
+        pcds_1 = pcds_1.unsqueeze(3)
+        pcds_2 = pcds_2.unsqueeze(0)
+        pcds_2 = pcds_2.unsqueeze(2)
+
+        dist = ((pcds_1 - pcds_2) ** 2).sum(dim=-1)
+
+        is_close = torch.sqrt(dist) < eps
+        d1 = is_close.any(dim=3).to(torch.float).mean(dim=2)
+        d2 = is_close.any(dim=2).to(torch.float).mean(dim=2)
+
+        return d1, d2
+
+
 class RadiusOverlap(GeometricSimilarity):
-    def __init__(self, eps: float, agg: str):
+    def __init__(self, eps: float, agg: str, batch_size: int = 20):
         self.eps = eps
         self.agg = agg
+        self.batch_size = batch_size
 
     def __call__(
         self, main_geometry: torch.Tensor, other_geometry: torch.Tensor
@@ -54,16 +71,17 @@ class RadiusOverlap(GeometricSimilarity):
         if other_geometry.ndim == 2:
             other_geometry = other_geometry.unsqueeze(0)
 
-        main_geometry = main_geometry.unsqueeze(1)
-        main_geometry = main_geometry.unsqueeze(3)
-        other_geometry = other_geometry.unsqueeze(0)
-        other_geometry = other_geometry.unsqueeze(2)
+        d1_buffer, d2_buffer = list(), list()
 
-        dist = ((main_geometry - other_geometry) ** 2).sum(dim=-1)
+        n_batches = main_geometry.shape[0] // self.batch_size + 1 if self.batch_size > 0 else 1
 
-        is_close = torch.sqrt(dist) < self.eps
-        d1 = is_close.any(dim=3).to(torch.float).mean(dim=2)
-        d2 = is_close.any(dim=2).to(torch.float).mean(dim=2)
+        for batch_main_geometry in torch.tensor_split(main_geometry, n_batches, dim=0):
+            d1, d2 = radius_overlap(batch_main_geometry, other_geometry, self.eps)
+            d1_buffer.append(d1)
+            d2_buffer.append(d2)
+
+        d1 = torch.concat(d1_buffer, dim=0)
+        d2 = torch.concat(d2_buffer, dim=0)
 
         if self.agg == "sum":
             result = d1 + d2
@@ -75,3 +93,4 @@ class RadiusOverlap(GeometricSimilarity):
             raise ValueError(f"Unknown aggregation method {self.agg}")
 
         return result
+
