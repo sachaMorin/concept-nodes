@@ -21,7 +21,6 @@ class ObjectMap:
         min_points_pcd: int,
         grace_min_segments: int,
         filter_min_every: int,
-        collate_objects_every: int,
         self_merge_every: int,
         denoise_every: int,
         downsample_every: int,
@@ -33,7 +32,6 @@ class ObjectMap:
         self.grace_min_segments = grace_min_segments
         self.filter_min_every = filter_min_every
         self.object_factory = object_factory
-        self.collate_objects_every = collate_objects_every
         self.self_merge_every = self_merge_every
         self.denoise_every = denoise_every
         self.downsample_every = downsample_every
@@ -50,15 +48,6 @@ class ObjectMap:
         # Map from index in collated tensors (e.g., semantic_tensor, geometry_tensor) to object key in self.objects
         self.key_map = []
 
-    def to(self, device: str):
-        self.device = device
-        if self.semantic_tensor is not None:
-            self.semantic_tensor = self.semantic_tensor.to(device)
-        if self.centroid_tensor is not None:
-            self.centroid_tensor = self.centroid_tensor.to(device)
-        if self.pcd_tensors is not None:
-            self.pcd_tensors = [p.to(device) for p in self.pcd_tensors]
-
     def __len__(self):
         return len(self.objects)
 
@@ -71,20 +60,53 @@ class ObjectMap:
     def __setitem__(self, key, value):
         self.objects[self.key_map[key]] = value
 
-    def append(self, obj: Object) -> None:
-        self.objects[self.current_id] = obj
-        self.current_id += 1
-        self.key_map.append(self.current_id)
+    @property
+    def pcd_o3d(self) -> List[o3d.geometry.PointCloud]:
+        return [o.pcd for o in self]
 
-    def pop(self, key) -> Object:
-        return self.objects.pop(self.key_map[key])
+    @property
+    def pcd_np(self) -> List[np.ndarray]:
+        return [o.pcd_np for o in self]
 
-    def concat(self, other: "ObjectMap") -> None:
-        """Merge maps without merging objects."""
-        for obj in other.objects.values():
-            self.append(obj)
-        self.collate_geometry()
-        self.collate_semantic_ft()
+    @property
+    def oriented_bbox_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
+        bbox = [o.pcd.get_oriented_bounding_box() for o in self]
+
+        # Change color to black
+        for b in bbox:
+            b.color = (0, 0, 0)
+
+        return bbox
+
+    @property
+    def centroids_o3d(self) -> List[o3d.geometry.TriangleMesh]:
+        if len(self):
+            centroids = []
+            for obj in self:
+                centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
+                c = obj.centroid
+                centroid.translate(c)
+                centroids.append(centroid)
+        else:
+            centroids = []
+
+        return centroids
+
+    @property
+    def centroids_np(self) -> List[np.ndarray]:
+        return np.stack([o.centroid for o in self], axis=0)
+
+    def denoise_objects(self):
+        for obj in self:
+            obj.denoise()
+
+    def downsample_objects(self):
+        for obj in self:
+            obj.downsample()
+
+    def collate_objects(self):
+        for obj in self:
+            obj.collate()
 
     def collate_geometry(self):
         if len(self):
@@ -111,6 +133,7 @@ class ObjectMap:
         self.key_map = list(self.objects.keys())
 
     def collate(self):
+        self.collate_objects()
         self.collate_geometry()
         self.collate_semantic_ft()
         self.collate_keys()
@@ -139,7 +162,6 @@ class ObjectMap:
 
         for i in range(len(rgb_crops)):
             if not is_bg[i]:
-                # Transform pcd_points with camera_pose
                 object = self.object_factory(
                     rgb=rgb_crops[i],
                     mask=mask_crops[i],
@@ -171,6 +193,19 @@ class ObjectMap:
         )
 
         return mergeable, merge_idx
+
+    def append(self, obj: Object) -> None:
+        self.objects[self.current_id] = obj
+        self.current_id += 1
+        self.key_map.append(self.current_id)
+
+    def pop(self, key) -> Object:
+        return self.objects.pop(self.key_map[key])
+
+    def concat(self, other: "ObjectMap") -> None:
+        for obj in other.objects.values():
+            self.append(obj)
+        self.collate()
 
     def __iadd__(self, other: "ObjectMap"):
         if len(self) == 0:
@@ -217,7 +252,6 @@ class ObjectMap:
         for i in has_been_merged:
             self.pop(i)
 
-        self.collate_objects()
         self.collate()
 
     def filter_min_segments(self, n_min_segments: int = -1, grace: bool = True):
@@ -243,18 +277,6 @@ class ObjectMap:
         self.objects = new_objects
         self.collate()
 
-    def collate_objects(self):
-        for obj in self:
-            obj.collate()
-
-    def denoise_objects(self):
-        for obj in self:
-            obj.denoise()
-
-    def downsample_objects(self):
-        for obj in self:
-            obj.downsample()
-
     def check_processing(self):
         if self.downsample_every > 0 and self.n_updates % self.downsample_every == 0:
             self.downsample_objects()
@@ -263,57 +285,8 @@ class ObjectMap:
         if self.filter_min_every > 0 and self.n_updates % self.filter_min_every == 0:
             self.filter_min_segments()
             self.filter_min_points_pcd()
-        if (
-            self.collate_objects_every > 0
-            and self.n_updates % self.collate_objects_every == 0
-        ):
-            self.collate_objects()
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
             self.self_merge()
-
-    def save_object_grids(self, save_dir: str):
-        import matplotlib.pyplot as plt
-
-        for i, obj in enumerate(self):
-            obj.view_images_caption()
-            plt.savefig(f"{save_dir}/{i}.png")
-            plt.close()
-
-    @property
-    def pcd_o3d(self) -> List[o3d.geometry.PointCloud]:
-        return [o.pcd for o in self]
-
-    @property
-    def pcd_np(self) -> List[np.ndarray]:
-        return [o.pcd_np for o in self]
-
-    @property
-    def oriented_bbox_o3d(self) -> List[o3d.geometry.OrientedBoundingBox]:
-        bbox = [o.pcd.get_oriented_bounding_box() for o in self]
-
-        # Change color to black
-        for b in bbox:
-            b.color = (0, 0, 0)
-
-        return bbox
-
-    @property
-    def centroids_o3d(self) -> List[o3d.geometry.TriangleMesh]:
-        if len(self):
-            centroids = []
-            for obj in self:
-                centroid = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
-                c = obj.centroid
-                centroid.translate(c)
-                centroids.append(centroid)
-        else:
-            centroids = []
-
-        return centroids
-
-    @property
-    def centroids_np(self) -> List[np.ndarray]:
-        return np.stack([o.centroid for o in self], axis=0)
 
     def draw_geometries(self, random_colors: bool = False) -> None:
         pcd = self.pcd_o3d
@@ -327,6 +300,14 @@ class ObjectMap:
                 c.paint_uniform_color(color)
 
         o3d.visualization.draw_geometries(pcd + centroids + bbox)
+
+    def save_object_grids(self, save_dir: str):
+        import matplotlib.pyplot as plt
+
+        for i, obj in enumerate(self):
+            obj.view_images_caption()
+            plt.savefig(f"{save_dir}/{i}.png")
+            plt.close()
 
     def save(self, path: str) -> None:
         import pickle
@@ -384,3 +365,12 @@ class ObjectMap:
                 mask = seg.mask * 255
                 cv2.imwrite(str(path_rgb / f"{str(j).zfill(3)}.png"), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
                 cv2.imwrite(str(path_mask / f"{str(j).zfill(3)}.png"), mask)
+
+    def to(self, device: str):
+        self.device = device
+        if self.semantic_tensor is not None:
+            self.semantic_tensor = self.semantic_tensor.to(device)
+        if self.centroid_tensor is not None:
+            self.centroid_tensor = self.centroid_tensor.to(device)
+        if self.pcd_tensors is not None:
+            self.pcd_tensors = [p.to(device) for p in self.pcd_tensors]

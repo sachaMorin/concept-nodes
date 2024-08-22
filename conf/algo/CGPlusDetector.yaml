@@ -31,7 +31,6 @@ mapping:
   n_min_segments: 3
   grace_min_segments: 30
   filter_min_every: 10
-  collate_objects_every: 1
   self_merge_every: -1
   downsample_every: -1
   denoise_every: -1
