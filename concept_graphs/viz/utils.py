@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import numpy as np
-import matplotlib.cm as cm
+from matplotlib.pyplot import get_cmap
 
 
 def similarities_to_rgb(
@@ -10,7 +10,7 @@ def similarities_to_rgb(
     similarities = (similarities - similarities.min()) / (
         similarities.max() - similarities.min()
     )
-    cmap = cm.get_cmap(cmap_name)
+    cmap = get_cmap(cmap_name)
     colors = [cmap(sim.item())[:3] for sim in similarities]
     colors = [(int(255 * c[0]), int(255 * c[1]), int(255 * c[2])) for c in colors]
 
