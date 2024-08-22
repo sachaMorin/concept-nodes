@@ -2,13 +2,15 @@ _target_: concept_graphs.perception.segmentation.AutomaticMobileSAM.AutomaticMob
 mask_generator:
   _partial_: true
   _target_: mobile_sam.SamAutomaticMaskGenerator
-  box_nms_thresh: .5
-  points_per_side: 12
-  points_per_batch: 144
+  box_nms_thresh: 0.5
   pred_iou_thresh: 0.88
-  stability_score_thresh: 0.95
-  crop_n_layers: 0
-  min_mask_region_area: 100
+#  box_nms_thresh: .5
+#  points_per_side: 12
+#  points_per_batch: 144
+#  pred_iou_thresh: 0.88
+#  stability_score_thresh: 0.95
+#  crop_n_layers: 0
+#  min_mask_region_area: 100
 
 model_type: "vit_t"
 checkpoint_path: ${cache_dir}/mobile_sam.pt

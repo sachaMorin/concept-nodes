@@ -5,14 +5,15 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def get_grid_coords(
-        grid_width: int,
-        grid_height: int,
-        image_width: int,
-        image_height: int,
-        device: str,
-        jitter: bool = False,
-        uniform_jitter: bool = True,
+    grid_width: int,
+    grid_height: int,
+    image_width: int,
+    image_height: int,
+    device: str,
+    jitter: bool = False,
+    uniform_jitter: bool = True,
 ) -> torch.Tensor:
     y = torch.linspace(0, 1, grid_height + 2, device=device)[1:-1] * image_height
     x = torch.linspace(0, 1, grid_width + 2, device=device)[1:-1] * image_width
@@ -50,7 +51,7 @@ def bbox_area(bbox: torch.Tensor) -> torch.Tensor:
 
 
 def safe_bbox_inflate(
-        bbox: torch.Tensor, inflate_px: int, img_width: int, img_height: int
+    bbox: torch.Tensor, inflate_px: int, img_width: int, img_height: int
 ) -> torch.Tensor:
     bbox = bbox.clone()
     bbox[:, 0] = torch.clamp(bbox[:, 0] - inflate_px, 0, img_width - 1)
@@ -61,14 +62,14 @@ def safe_bbox_inflate(
 
 
 def extract_rgb_crops(
-        img: np.ndarray,
-        bbox: np.ndarray,
-        mask_crops: Union[List[np.ndarray], None] = None,
-        bg_color: Union[int, None] = None,
+    img: np.ndarray,
+    bbox: np.ndarray,
+    mask_crops: Union[List[np.ndarray], None] = None,
+    bg_color: Union[int, None] = None,
 ) -> List[np.ndarray]:
     crops = []
     for i, box in enumerate(bbox):
-        crop = img[box[1]: box[3], box[0]: box[2]]
+        crop = img[box[1] : box[3], box[0] : box[2]]
         if mask_crops is not None and bg_color is not None:
             crop = np.where(mask_crops[i][:, :, np.newaxis], crop, bg_color)
         crops.append(crop)
@@ -78,14 +79,16 @@ def extract_rgb_crops(
 def extract_mask_crops(masks: np.ndarray, bbox: np.ndarray) -> List[np.ndarray]:
     crops = []
     for mask, box in zip(masks, bbox):
-        crop = mask[box[1]: box[3], box[0]: box[2]]
+        crop = mask[box[1] : box[3], box[0] : box[2]]
         crops.append(crop)
     return crops
 
 
 def bbox_overlap(xyxy: torch.Tensor) -> torch.Tensor:
     # Compute intersection boxes
-    lt = torch.maximum(xyxy[:, None, :2], xyxy[None, :, :2])  # left-top points (N, N, 2)
+    lt = torch.maximum(
+        xyxy[:, None, :2], xyxy[None, :, :2]
+    )  # left-top points (N, N, 2)
     rb = torch.minimum(
         xyxy[:, None, 2:], xyxy[None, :, 2:]
     )  # right-bottom points (N, N, 2)

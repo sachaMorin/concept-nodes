@@ -6,6 +6,7 @@ import logging
 # A logger for this file
 log = logging.getLogger(__name__)
 
+
 class ImageCaptioner:
     def __init__(self, max_images: int):
         self.max_images = (

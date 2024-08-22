@@ -13,6 +13,7 @@ from .segmentation.utils import (
     mask_subtract_contained,
 )
 
+
 def filter_list(list: List, mask: List[bool]):
     return [o for (o, m) in zip(list, mask) if m]
 
@@ -98,11 +99,12 @@ class PerceptionPipeline:
             scores = areas
         else:
             raise ValueError(
-                f"Invalid segment scoring method: {self.segment_scoring_method}")
+                f"Invalid segment scoring method: {self.segment_scoring_method}"
+            )
 
         # Penalty for touching border
         if touches_border.any():
-            scores[touches_border] = scores[touches_border] * .10
+            scores[touches_border] = scores[touches_border] * 0.10
 
         # Segment filtering
         keep = areas > self.min_mask_area_px
@@ -129,6 +131,7 @@ class PerceptionPipeline:
         if self.debug_images:
             from concept_graphs.viz.segmentation import plot_segments
             import matplotlib.pyplot as plt
+
             img_name = str(self.debug_counter).zfill(7) + ".png"
             plot_segments(rgb, torch.from_numpy(masks))
             plt.savefig(self.debug_dir / "segments" / img_name)

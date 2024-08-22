@@ -28,7 +28,7 @@ class OpenAITagger(OpenAICaptioner):
         response = response.replace(self.prefix, "")
         response = response.replace("*", "")
         response = response.replace("'", "")
-        response = response.replace("\"", "")
+        response = response.replace('"', "")
         response = response.replace(".", "")
         response = response.replace(",", "")
 

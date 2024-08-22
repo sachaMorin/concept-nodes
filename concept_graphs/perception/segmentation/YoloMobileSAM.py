@@ -103,7 +103,11 @@ class YoloMobileSAM(SegmentationModel):
 
         if self.debug_images:
             img_name = str(self.debug_counter).zfill(7) + ".png"
-            yolo_output[0].plot(show=False, save=True, filename=str(self.debug_dir / "detections" / img_name))
+            yolo_output[0].plot(
+                show=False,
+                save=True,
+                filename=str(self.debug_dir / "detections" / img_name),
+            )
             self.debug_counter += 1
 
         return masks, bbox, iou_predictions

@@ -12,18 +12,18 @@ from .utils import pairs_to_connected_components
 class ObjectMap:
 
     def __init__(
-            self,
-            similarity: Similarity,
-            object_factory: ObjectFactory,
-            n_min_segments: int,
-            min_points_pcd: int,
-            grace_min_segments: int,
-            filter_min_every: int,
-            collate_objects_every: int,
-            self_merge_every: int,
-            denoise_every: int,
-            downsample_every: int,
-            device: str = "cpu",
+        self,
+        similarity: Similarity,
+        object_factory: ObjectFactory,
+        n_min_segments: int,
+        min_points_pcd: int,
+        grace_min_segments: int,
+        filter_min_every: int,
+        collate_objects_every: int,
+        self_merge_every: int,
+        denoise_every: int,
+        downsample_every: int,
+        device: str = "cpu",
     ):
         self.similarity = similarity
         self.n_min_segments = n_min_segments
@@ -113,25 +113,25 @@ class ObjectMap:
         self.collate_keys()
 
     def from_perception(
-            self,
-            rgb_crops: List[np.ndarray],
-            mask_crops: List[np.ndarray],
-            features: np.ndarray,
-            scores: np.ndarray,
-            pcd_points: List[np.ndarray],
-            pcd_rgb: List[np.ndarray],
-            camera_pose: np.ndarray,
-            is_bg: np.ndarray,
+        self,
+        rgb_crops: List[np.ndarray],
+        mask_crops: List[np.ndarray],
+        features: np.ndarray,
+        scores: np.ndarray,
+        pcd_points: List[np.ndarray],
+        pcd_rgb: List[np.ndarray],
+        camera_pose: np.ndarray,
+        is_bg: np.ndarray,
     ):
         n_objects = len(rgb_crops)
         assert (
-                n_objects
-                == len(mask_crops)
-                == len(features)
-                == len(scores)
-                == len(pcd_points)
-                == len(pcd_rgb)
-                == len(is_bg)
+            n_objects
+            == len(mask_crops)
+            == len(features)
+            == len(scores)
+            == len(pcd_points)
+            == len(pcd_rgb)
+            == len(is_bg)
         )
 
         for i in range(len(rgb_crops)):
@@ -152,7 +152,9 @@ class ObjectMap:
         self.collate()
 
     def similarity_with(
-            self, other: "ObjectMap", mask_diagonal: bool,
+        self,
+        other: "ObjectMap",
+        mask_diagonal: bool,
     ) -> Tuple[List[bool], List[int]]:
         """Compute similarities with objects from another map."""
         mergeable, merge_idx = self.similarity(
@@ -219,7 +221,9 @@ class ObjectMap:
         new_objects = {}
         for k, obj in self.objects.items():
             if obj.n_segments >= n_min_segments or (
-                    grace and (self.n_updates - obj.timestep_created < self.grace_min_segments)):
+                grace
+                and (self.n_updates - obj.timestep_created < self.grace_min_segments)
+            ):
                 new_objects[k] = obj
         self.objects = new_objects
         self.collate()
@@ -255,8 +259,8 @@ class ObjectMap:
             self.filter_min_segments()
             self.filter_min_points_pcd()
         if (
-                self.collate_objects_every > 0
-                and self.n_updates % self.collate_objects_every == 0
+            self.collate_objects_every > 0
+            and self.n_updates % self.collate_objects_every == 0
         ):
             self.collate_objects()
         if self.self_merge_every > 0 and self.n_updates % self.self_merge_every == 0:
@@ -331,7 +335,13 @@ class ObjectMap:
         for i, obj in enumerate(self):
             n_points_object = len(obj.pcd.points)
             pcd_merged += obj.pcd
-            obj_ann = dict(id=i, objectId=i, label=obj.tag, caption=obj.caption, segments=list(range(point_counter, point_counter + n_points_object)))
+            obj_ann = dict(
+                id=i,
+                objectId=i,
+                label=obj.tag,
+                caption=obj.caption,
+                segments=list(range(point_counter, point_counter + n_points_object)),
+            )
             annotations.append(obj_ann)
             point_counter += n_points_object
 
