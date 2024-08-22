@@ -1,4 +1,5 @@
 _target_: rgbd_dataset.datasets.Unreal.Unreal
+dataset_name: "unreal"
 base_path: ???
 scene: bistro_scene
 width: 1920

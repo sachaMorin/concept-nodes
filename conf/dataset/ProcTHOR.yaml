@@ -1,4 +1,5 @@
 _target_: rgbd_dataset.rgbd_dataset.datasets.ProcTHOR.ProcTHOR
+dataset_name: "procthor"
 base_path: ???
 split: train
 scene: 0

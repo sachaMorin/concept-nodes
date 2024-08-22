@@ -1,5 +1,6 @@
 defaults:
   - Replica
+dataset_name: "replica_low"
 resized_width: 600
 resized_height: 340
 sequence_stride: 20

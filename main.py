@@ -17,11 +17,12 @@ log = logging.getLogger(__name__)
 
 @hydra.main(version_base=None, config_path="conf", config_name="main")
 def main(cfg: DictConfig):
-    log.info(f"Running config with name {cfg.name}...")
-    log.info("Loading data and models...")
     set_seed(cfg.seed)
+    log.info(f"Running algo {cfg.name}...")
+    log.info("Loading data and models...")
     dataset = hydra.utils.instantiate(cfg.dataset)
     dataloader = hydra.utils.instantiate(cfg.dataloader, dataset=dataset)
+    log.info(f"Loaded dataset {dataset.name}.")
 
     segmentation_model = hydra.utils.instantiate(cfg.segmentation)
     ft_extractor = hydra.utils.instantiate(cfg.ft_extraction)
@@ -84,7 +85,7 @@ def main(cfg: DictConfig):
     output_dir = Path(cfg.output_dir)
     now = datetime.datetime.now()
     date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
-    output_dir_map = output_dir / f"{cfg.name}_{date_time}"
+    output_dir_map = output_dir / f"{dataset.name}_{cfg.name}_{date_time}"
 
     log.info(f"Saving map, images and config to {output_dir_map}...")
     grid_image_path = output_dir_map / "grid_image"

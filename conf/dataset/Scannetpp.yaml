@@ -1,4 +1,5 @@
 _target_: rgbd_dataset.rgbd_dataset.datasets.Scannetpp.Scannetpp
+dataset_name: "scannetpp"
 base_path: ${data_dir}/scannetpp_data
 scene: 4318f8bb3c
 width: 1920

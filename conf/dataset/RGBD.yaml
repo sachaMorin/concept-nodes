@@ -1,4 +1,5 @@
 _target_: rgbd_dataset.rgbd_dataset.datasets.RGBD.RGBD
+dataset_name: "rgbd"
 base_path: ???
 scene: dock
 width: 640
