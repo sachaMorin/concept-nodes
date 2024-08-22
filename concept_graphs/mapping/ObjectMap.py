@@ -2,6 +2,8 @@ from typing import List, Dict, Tuple
 import numpy as np
 import torch
 import open3d as o3d
+from pathlib import Path
+import json
 from .Object import Object, ObjectFactory
 from .similarity.Similarity import Similarity
 from .utils import pairs_to_connected_components
@@ -317,3 +319,30 @@ class ObjectMap:
 
         with open(path, "wb") as f:
             pickle.dump(self, f)
+
+    def export(self, path: str) -> None:
+        path = Path(path)
+
+        # Export main attributes in standard file formats
+        pcd_merged = o3d.geometry.PointCloud()
+        annotations = []
+        point_counter = 0
+
+        for i, obj in enumerate(self):
+            n_points_object = len(obj.pcd.points)
+            pcd_merged += obj.pcd
+            obj_ann = dict(id=i, objectId=i, label=obj.tag, caption=obj.caption, segments=list(range(point_counter, point_counter + n_points_object)))
+            annotations.append(obj_ann)
+            point_counter += n_points_object
+
+        # Save point cloud
+        o3d.io.write_point_cloud(str(path / "point_cloud.pcd"), pcd_merged)
+
+        # Save json
+        json_data = dict(sceneId="", segGroups=annotations)
+        with open(path / "segments_anno.json", "w") as f:
+            json.dump(json_data, f)
+
+        # Save semantic tensor
+        semantics = self.semantic_tensor.cpu().numpy()
+        np.save(path / "clip_features.npy", semantics)

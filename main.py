@@ -91,9 +91,14 @@ def main(cfg: DictConfig):
     os.makedirs(grid_image_path, exist_ok=False)
     main_map.save_object_grids(grid_image_path)
 
+    # Also export some data to standard files for consumption by other packages
+    main_map.export(output_dir_map)
+
+    # Save entire map as a pickle object
     map_path = output_dir_map / "map.pkl"
     main_map.save(map_path)
 
+    # Hydra config
     OmegaConf.save(cfg, output_dir_map / "config.yaml")
 
     # Create symlink to latest map
@@ -105,6 +110,7 @@ def main(cfg: DictConfig):
     # Move debug directory if it exists
     if os.path.exists(output_dir / "debug"):
         os.rename(output_dir / "debug", output_dir_map / "debug")
+
 
 if __name__ == "__main__":
     main()
