@@ -343,7 +343,8 @@ class ObjectMap:
                 label=obj.tag,
                 caption=obj.caption,
                 segments=list(range(point_counter, point_counter + n_points_object)),
-                camera_poses=[s.camera_pose.tolist() for s in obj.segments.get_sorted()]
+                camera_poses=[s.camera_pose.tolist() for s in obj.segments.get_sorted()],
+                centroid = np.mean(np.asarray(obj.pcd.points), axis=0).tolist()
             )
             annotations.append(obj_ann)
             point_counter += n_points_object
