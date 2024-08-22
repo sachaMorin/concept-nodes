@@ -36,7 +36,9 @@ class PointCloudOverlapClosestK(GeometricSimilarity):
         is_symmetrical: bool,
     ) -> torch.Tensor:
         dist_centroids = torch.cdist(main_centroid, other_centroid)
-        closest_k = torch.topk(dist_centroids, k=self.k, dim=0, largest=False).indices.T
+
+        k = min(len(main_pcd), self.k)
+        closest_k = torch.topk(dist_centroids, k=k, dim=0, largest=False).indices.T
         result = torch.zeros_like(dist_centroids)
 
 
