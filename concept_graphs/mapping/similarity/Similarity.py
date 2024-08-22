@@ -43,7 +43,7 @@ class Similarity:
 
         if mask_diagonal:
             semantic_sim.fill_diagonal_(-1)
-            geometric_sim.fill_diagonal_(0)
+            geometric_sim.fill_diagonal_(-1)
 
         mergeable = (geometric_sim > self.geometric_sim_thresh) & (
             semantic_sim > self.semantic_sim_thresh
@@ -88,7 +88,7 @@ class CombinedSimilarity:
 
         if mask_diagonal:
             semantic_sim.fill_diagonal_(-1)
-            geometric_sim.fill_diagonal_(0)
+            geometric_sim.fill_diagonal_(-1)
 
         combined = (geometric_sim + semantic_sim) / 2
         mergeable = (
@@ -98,7 +98,7 @@ class CombinedSimilarity:
         )
 
         combined_masked = torch.where(
-            mergeable, semantic_sim, -torch.ones_like(semantic_sim)
+            mergeable, combined, -torch.ones_like(combined)
         )
 
         merge = mergeable.any(dim=0).cpu().tolist()
