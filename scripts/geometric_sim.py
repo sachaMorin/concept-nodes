@@ -1,6 +1,6 @@
 import torch
 
-from concept_graphs.mapping.similarity.geometric import RadiusOverlap
+from concept_graphs.mapping.similarity.geometric import point_cloud_overlap, PointCloudOverlapClosestK
 
 
 # Sample 100 points on a sphere
@@ -13,10 +13,10 @@ def get_sphere(n_points, radius, translation):
     return sphere
 
 
-s1 = get_sphere(100, 1, [0, 0, 0])
-s2 = get_sphere(100, 1, [0, 0, 0])
-s3 = get_sphere(100, 2, [0, 0, 0])
-s4 = get_sphere(100, 1, [10.0, 0, 0])
+s1 = get_sphere(1000, 1, [0, 0, 0])
+s2 = get_sphere(1000, 1, [0, 0, 0])
+s3 = get_sphere(1000, 2, [0, 0, 0])
+s4 = get_sphere(1000, 1, [10.0, 0, 0])
 
 half_sphere = s1[s1[:, 0] > 0]
 
@@ -24,18 +24,29 @@ while half_sphere.shape[0] < 100:
     half_sphere = torch.cat([half_sphere, half_sphere], dim=0)
 half_sphere = half_sphere[:100]
 
+# sim1, sim2 = point_cloud_overlap(s1, half_sphere, eps=0.3)
+sim = PointCloudOverlapClosestK(eps=.1, agg="other", k=2, max_dist_centroid=1000)
 
-sim = RadiusOverlap(eps=0.3, agg="mean")
+pcds = [s1, s2, s3, s4, half_sphere]
+centroids = torch.stack([p.mean(dim=0) for p in pcds])
+geo_sims = sim(main_centroid=centroids, main_pcd=pcds, other_centroid=centroids, other_pcd=pcds, is_symmetrical=False)
+print(geo_sims)
 
-print(sim(s1, s1))
-print(sim(s1, s2))
-print(sim(s1, half_sphere))
 
-sim = RadiusOverlap(eps=0.3, agg="max")
+# sim = RadiusOverlap(eps=0.3, agg="mean")
 
-print(sim(s1, s1))
-print(sim(s1, s2))
-print(sim(s1, half_sphere))
+# sim = PointCloudOverlapClosestK(eps=0.3, agg="mean")
+
+
+# print(sim(s1, s1))
+# print(sim(s1, s2))
+# print(sim(s1, half_sphere))
+
+# sim = RadiusOverlap(eps=0.3, agg="max")
+
+# print(sim(s1, s1))
+# print(sim(s1, s2))
+# print(sim(s1, half_sphere))
 
 # print(chamferdist(s1, s1))
 # print(chamferdist(s1, s2))
