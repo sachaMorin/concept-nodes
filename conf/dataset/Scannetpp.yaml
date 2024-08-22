@@ -11,4 +11,4 @@ sequence_stride: 50
 relative_pose: False
 depth_scale: 1000.0
 point_cloud: false
-depth_trunc: 8.0
+depth_trunc: 2.0
