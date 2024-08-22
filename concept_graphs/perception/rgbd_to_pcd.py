@@ -5,7 +5,7 @@ import numpy as np
 def rgbd_to_object_pcd(
     rgb: np.ndarray,
     depth: np.ndarray,
-    masks: np.ndarray,
+    masks: List[np.ndarray],
     intrinsics: np.ndarray,
     depth_trunc: float,
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
