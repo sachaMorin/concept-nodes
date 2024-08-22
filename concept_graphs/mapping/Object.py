@@ -20,12 +20,14 @@ class Object:
         segment_heap_size: int,
         semantic_mode: str,
         timestep_created: int,
+        max_point_pcd: int = 1200,
         denoising_callback: Union[PointCloudCallback, None] = None,
         downsampling_callback: Union[PointCloudCallback, None] = None,
     ):
         self.segment_heap_size = segment_heap_size
         self.semantic_mode = semantic_mode
         self.timestep_created = timestep_created
+        self.max_point_pcd = max_point_pcd
         self.denoising_callback = denoising_callback
         self.downsampling_callback = downsampling_callback
 
@@ -63,7 +65,7 @@ class Object:
 
         self.segments.push(segment)
 
-        self.update_geometry()
+        self.update_geometry_np()
         self.update_semantic_ft()
         self.is_collated = True
 
@@ -76,13 +78,20 @@ class Object:
         """Pull segment point clouds into one object-level point cloud"""
         points = np.concatenate([s.pcd_points for s in self.segments], axis=0)
         colors = np.concatenate([s.pcd_rgb for s in self.segments], axis=0)
+        self.pcd = o3d.geometry.PointCloud()
         self.pcd.points = o3d.utility.Vector3dVector(points)
         self.pcd.colors = o3d.utility.Vector3dVector(colors)
 
         self.downsample()
+        self.update_geometry_np()
 
+    def update_geometry_np(self):
         self.pcd_np = np.asarray(self.pcd.points) # No copy
         self.centroid = np.mean(self.pcd_np, axis=0)
+
+        if len(self.pcd_np) > self.max_point_pcd:
+            sub = np.random.choice(len(self.pcd_np), size=self.max_point_pcd, replace=False)
+            self.pcd_np = self.pcd_np[sub]
 
     def update_semantic_ft(self):
         """Pick the representative semantic vector from the segments."""
@@ -181,9 +190,7 @@ class RunningAverageObject(Object):
 
     def update_geometry(self):
         self.downsample()
-
-        self.pcd_np = np.asarray(self.pcd.points) # No copy
-        self.centroid = np.mean(self.pcd_np, axis=0)
+        self.update_geometry_np()
 
     def update_semantic_ft(self):
         pass
