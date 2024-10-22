@@ -1,7 +1,7 @@
 # @package _global_
 defaults:
   - base
-  - /ft_extraction: CLIP
+  - /ft_extraction: CLIP_H14
   - override /segmentation: YoloMobileSAM
   - _self_
 
