@@ -91,6 +91,11 @@ class ImageCaptioner:
         response = response.replace(".", "")
         response = response.replace(",", "")
 
+        if response.startswith("a "):
+            response = response[2:]
+        if response.startswith("an "):
+            response = response[3:]
+
         return response
 
     def caption_map(self, map: "ObjectMap") -> None:
