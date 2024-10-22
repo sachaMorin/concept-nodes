@@ -76,6 +76,9 @@ class YoloMobileSAM(SegmentationModel):
                 torch.from_numpy(bbox_transformed).to(torch.int).to(self.sam_device)
             )
 
+            if len(bbox) == 0:
+                return None, None, None
+
             self.sam_predictor.set_image(img)
             if self.sam_prompting == "bbox":
                 masks, iou_predictions, _ = self.sam_predictor.predict_torch(

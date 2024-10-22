@@ -67,6 +67,9 @@ class PerceptionPipeline:
     ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
         masks, bbox, conf = self.segmentation_model(rgb)
 
+        if masks is None or bbox is None or conf is None:
+            return None
+
         # Penalty if original bbox touches image border
         h, w = rgb.shape[:2]
         touches_left = bbox[:, 0] <= 0
