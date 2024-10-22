@@ -1,11 +1,11 @@
 
 _target_: ???
-system_prompt: "You are a helpful assistant that describes objects in a single word. You will be provided with up to 4 views of the same object. Describe the object with a single word."
-user_query: "Describe the object with a single word."
+system_prompt: "You are a helpful assistant that describes objects in a single word. You will be provided with up to 4 views of the same object. Describe the object with a few words. You should generally use a single word, but you can use more than one if needed (e.g., ice cream, toilet paper)."
+user_query: "Describe the object in a few words."
 max_images: 4
 tag: true
 bg_mask_mode: no_mask
 allow_no_object_pred: true
 no_object_prompt: "If you believe there is no central object in the images or the images depict a background element, output BACKGROUND."
 force_reponse_prefix: true
-prefix: "The best word to describe the central object is"
+prefix: "The best description of the central object is"
