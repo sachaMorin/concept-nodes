@@ -155,6 +155,6 @@ class PerceptionPipeline:
             is_bg=bg[mask],
         )
 
-        # TEMP FIX, THIS SEEMS TO HELP WITH A MEMORY LEAK
+        # TEMP FIX. This seems to help with memory.
         result = copy.deepcopy(result)
         return result
