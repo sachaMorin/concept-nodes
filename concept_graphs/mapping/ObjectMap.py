@@ -96,6 +96,13 @@ class ObjectMap:
     def centroids_np(self) -> List[np.ndarray]:
         return np.stack([o.centroid for o in self], axis=0)
 
+    @property
+    def n_segments(self) -> int:
+        n_segments = 0
+        for obj in self:
+            n_segments += len(obj.segments)
+        return n_segments
+
     def denoise_objects(self):
         for obj in self:
             obj.denoise()
@@ -165,7 +172,7 @@ class ObjectMap:
                 object = self.object_factory(
                     rgb=rgb_crops[i],
                     mask=mask_crops[i],
-                    semantic_ft=features[i],
+                    semantic_ft=np.copy(features[i]),
                     pcd_points=pcd_points[i],
                     pcd_rgb=pcd_rgb[i],
                     camera_pose=camera_pose,

@@ -53,7 +53,7 @@ def main(cfg: DictConfig):
 
         progress_bar.update(1)
         n_segments += len(local_map)
-        progress_bar.set_postfix(objects=len(main_map), segments=n_segments)
+        progress_bar.set_postfix(objects=len(main_map), map_segments=main_map.n_segments, detected_segments=n_segments)
 
     # Postprocessing
     main_map.filter_min_segments(n_min_segments=cfg.final_min_segments, grace=False)
