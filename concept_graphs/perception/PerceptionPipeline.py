@@ -3,6 +3,7 @@ from typing import Dict, List, Union
 import torch
 import numpy as np
 from pathlib import Path
+import copy
 from .ft_extraction.FeatureExtractor import FeatureExtractor
 from .segmentation.SegmentationModel import SegmentationModel
 from .rgbd_to_pcd import rgbd_to_object_pcd
@@ -144,7 +145,7 @@ class PerceptionPipeline:
         # Filter empty point clouds. They can happen at this stage because of depth truncation
         mask = [len(p) > self.min_points_pcd for p in pcd_points]
 
-        return dict(
+        result = dict(
             rgb_crops=filter_list(rgb_crops, mask),
             mask_crops=filter_list(mask_crops, mask),
             features=features[mask],
@@ -153,3 +154,7 @@ class PerceptionPipeline:
             scores=scores[mask],
             is_bg=bg[mask],
         )
+
+        # TEMP FIX, THIS SEEMS TO HELP WITH A MEMORY LEAK
+        result = copy.deepcopy(result)
+        return result
