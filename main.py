@@ -1,13 +1,15 @@
 import datetime
 import os
-
+import time
+import json
+import logging
 from pathlib import Path
+
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
-import time
+
 from concept_graphs.utils import set_seed
-import logging
 from concept_graphs.mapping.utils import test_unique_segments
 
 
@@ -65,9 +67,12 @@ def main(cfg: DictConfig):
     main_map.filter_min_points_pcd()
 
     stop = time.time()
+    mapping_time = stop - start
+    n_objects = len(main_map)
+    fps = len(dataset) / (mapping_time)
     test_unique_segments(main_map)
-    log.info("Objects in final map: %d" % len(main_map))
-    log.info(f"fps: {len(dataset) / (stop - start):.2f}")
+    log.info("Objects in final map: %d" % n_objects)
+    log.info(f"fps: {fps:.2f}")
 
     if cfg.caption and hasattr(cfg, "vlm_caption"):
         log.info("Captioning objects...")
@@ -85,7 +90,7 @@ def main(cfg: DictConfig):
 
     output_dir = Path(cfg.output_dir)
     now = datetime.datetime.now()
-    date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
+    date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
     output_dir_map = output_dir / f"{dataset.name}_{cfg.name}_{date_time}"
 
     log.info(f"Saving map, images and config to {output_dir_map}...")
@@ -98,6 +103,10 @@ def main(cfg: DictConfig):
 
     # Hydra config
     OmegaConf.save(cfg, output_dir_map / "config.yaml")
+
+    # Few more stats
+    stats = dict(fps=fps, mapping_time=mapping_time, n_objects=n_objects, n_frames=len(dataset))
+    json.dump(stats, open(output_dir_map / "stats.json", "w"))
 
     # Create symlink to latest map
     symlink = output_dir / "latest_map"
