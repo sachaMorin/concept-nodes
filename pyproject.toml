@@ -10,6 +10,7 @@ dependencies = [
     "open_clip_torch",
     "ultralytics",
     "openai",
+    "numpy<=1.26.4",
 ]
 requires-python = ">=3.10"
 
