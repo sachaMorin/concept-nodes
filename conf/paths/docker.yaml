@@ -1,0 +1,4 @@
+# @package _global_
+cache_dir: /root/concept_graphs/checkpoints # Where to save model checkpoints and other assets
+data_dir: /root/concept_graphs/data # Where to look for datasets by default
+output_dir: /root/concept_graphs/outputs  # Where to save outputs
