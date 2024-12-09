@@ -23,17 +23,17 @@ from cv_bridge import CvBridge
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-
 from ovmm_ros.utils.rgbd import decode_RGBD_msg
 from ovmm_ros_msg.msg import RGBDImage
-from ovmm_ros_msg.srv import CLIPRetrieval
+from ovmm_ros_msg.srv import CLIPRetrieval, ProcessGraph
 
 from concept_graphs.utils import set_seed
 from concept_graphs.viz.utils import similarities_to_rgb
 from concept_graphs.mapping.utils import test_unique_segments
 
-from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import Header
+from std_srvs.srv import Empty
+from sensor_msgs.msg import PointCloud2
 from sensor_msgs.msg import PointField
 
 # A logger for this file
@@ -120,8 +120,11 @@ class SceneGraphNode(Node):
         # Query service
         self.clip_query_service = self.create_service(CLIPRetrieval, "concept_graphs/clip_query", self.clip_query_service_callback)
 
-        # Filter service
-        
+        # Graph Processing service
+        self.process_graph_service = self.create_service(ProcessGraph, "concept_graphs/process_graph", self.process_graph_service_callback)
+
+        # Export Map service
+        self.export_map_service = self.create_service(Empty, "concept_graphs/export_map", self.export_map_service_callback)
 
         # Point cloud publishers
         self.pcd_rgb_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/rgb', 10)
@@ -148,6 +151,8 @@ class SceneGraphNode(Node):
     def listener_callback(self, msg):
         frame = decode_RGBD_msg(msg, self.cv_bridge, self.tf_buffer, self.tf_frame, self.get_logger(), depth_scale=self.hydra_cfg.dataset.depth_scale)
 
+        frame["rgb"] = frame["rgb"][:, :, [2, 1, 0]] # BGR
+
         segments = self.perception_pipeline(frame["rgb"], frame["depth"], frame["intrinsics"])
 
         if segments is None:
@@ -158,13 +163,13 @@ class SceneGraphNode(Node):
         self.n_segments += len(local_map)
 
         self.main_map += local_map
-        self.pcds_o3d = self.main_map.pcd_o3d
         self.update_pcds()
         self.get_logger().info(f"concept graphs: objects={len(self.main_map)} map_segments={self.main_map.n_segments} detected_segments={self.n_segments}")
 
     def update_pcds(self):
-        if self.pcds_o3d is None:
+        if not len(self.main_map):
             return
+        self.pcds_o3d = self.main_map.pcd_o3d
 
         pcd_points = [np.asarray(p.points) for p in self.pcds_o3d]
         self.pcd_points = np.concatenate(pcd_points)
@@ -205,6 +210,51 @@ class SceneGraphNode(Node):
         response.similarity = sim_objects[best_match_idx]
 
         return response
+
+    def process_graph_service_callback(self, request, response):
+        if len(self.main_map):
+            if request.self_merge:
+                self.get_logger().info("Self merging...")
+                self.main_map.self_merge()
+            if request.n_min_segments > 0:
+                self.get_logger().info("Filtering segments based on number of detections...")
+                self.main_map.filter_min_segments(n_min_segments=request.n_min_segments, grace=False)
+
+            self.update_pcds()
+            self.get_logger().info(f"concept graphs: objects={len(self.main_map)} map_segments={self.main_map.n_segments} detected_segments={self.n_segments}")
+
+        return response
+
+
+    def export_map_service_callback(self, request, response):
+        output_dir = Path(self.hydra_cfg.output_dir)
+        now = datetime.datetime.now()
+        date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
+        output_dir_map = output_dir / f"ovmm_{date_time}"
+
+        self.get_logger().info(f"Saving map, images and config to {output_dir_map}...")
+        grid_image_path = output_dir_map / "object_viz"
+        os.makedirs(grid_image_path, exist_ok=False)
+        self.main_map.save_object_grids(grid_image_path)
+
+        # Also export some data to standard files
+        self.main_map.export(output_dir_map)
+
+        # Hydra config
+        OmegaConf.save(self.hydra_cfg, output_dir_map / "config.yaml")
+
+        # Create symlink to latest map
+        symlink = output_dir / "latest_map"
+        symlink.unlink(missing_ok=True)
+        os.symlink(output_dir_map, symlink)
+        self.get_logger().info(f"Created symlink to latest map at {symlink}")
+
+        # Move debug directory if it exists
+        if os.path.exists(output_dir / "debug"):
+            os.rename(output_dir / "debug", output_dir_map / "debug")
+
+        return response
+
 
     def pcd_instance_callback(self):
         if self.pcds_o3d is None:

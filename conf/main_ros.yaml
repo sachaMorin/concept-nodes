@@ -19,7 +19,7 @@ mapping:
   self_merge_every: -1
 
 device: cuda
-debug: false
+debug: true
 # caption: false
 # tag: false
 # save_map: true

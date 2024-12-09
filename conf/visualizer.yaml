@@ -1,6 +1,6 @@
 defaults:
   - ft_extraction: CLIP_H14
-  - paths: paths
+  - paths: docker
   - _self_
 
 map_path: ${output_dir}/latest_map
