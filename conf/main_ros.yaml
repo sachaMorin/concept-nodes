@@ -6,14 +6,16 @@ defaults:
 
 name: ???
 sim_thresh: 0.8
-overlap_eps: 0.01
+overlap_eps: 0.02
 voxel_size: 0.01
 denoising_eps: 0.03
 max_points_pcd: 8000
 final_min_segments: 1
 
 mapping:
-  filter_min_every: -1
+  n_min_segments: 2
+  filter_min_every: 1
+  grace_min_segments: 3
   self_merge_every: -1
 
 device: cuda
