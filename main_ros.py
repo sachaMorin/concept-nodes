@@ -52,7 +52,7 @@ def point_cloud_msg(points, colors, parent_frame):
     # represents the x-coordinate, the next 4 the y-coordinate, etc.
     fields = [PointField(
         name=n, offset=i*itemsize, datatype=ros_dtype, count=1)
-        for i, n in enumerate('xyzbgr')]
+        for i, n in enumerate('xyzrgb')]
 
     # The PointCloud2 message also has a header which specifies which 
     # coordinate frame it is represented in. 
@@ -195,7 +195,6 @@ class SceneGraphNode(Node):
         sim_rgb = np.array(similarities_to_rgb(sim_objects, "viridis")) / 255
 
         self.pcd_similarity = broadcast_color_pcd(self.pcds_o3d, sim_rgb)
-        self.pcd_similarity = self.pcd_similarity[:, [2, 1, 0]]
 
         # Get most similar object
         self.pcd_query_points = np.array(self.pcds_o3d[best_match_idx].points)
