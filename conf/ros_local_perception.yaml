@@ -1,0 +1,20 @@
+defaults:
+  - /dataset: ROS
+  - /perception: PerceptionPipeline
+  - /segmentation: YoloMobileSAM
+  - /ft_extraction: CLIP_H14
+  - /paths: docker
+  - _self_
+
+# No background filtering
+perception:
+  segment_scoring_method: area
+  bg_sim_thresh: 0.615
+  bg_classes: null
+  crop_bg_color: null
+
+
+device: cuda:1
+debug: false
+seed: 123
+

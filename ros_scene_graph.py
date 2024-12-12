@@ -2,85 +2,36 @@ from typing import List
 
 import datetime
 import os
-import time
-import json
 import logging
 from pathlib import Path
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from tqdm import tqdm
 import numpy as np
-import open3d as o3d
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 
-import cv2 as cv
 from cv_bridge import CvBridge
 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
+from std_srvs.srv import Empty
+from sensor_msgs.msg import PointCloud2
+
 from ovmm_ros.utils.rgbd import decode_RGBD_msg
+from ovmm_ros.utils.pcd import broadcast_color_pcd, point_cloud_msg
 from ovmm_ros_msg.msg import RGBDImage
 from ovmm_ros_msg.srv import CLIPRetrieval, ProcessGraph
 
 from concept_graphs.utils import set_seed
 from concept_graphs.viz.utils import similarities_to_rgb
-from concept_graphs.mapping.utils import test_unique_segments
 
-from std_msgs.msg import Header
-from std_srvs.srv import Empty
-from sensor_msgs.msg import PointCloud2
-from sensor_msgs.msg import PointField
 
 # A logger for this file
 log = logging.getLogger(__name__)
 
-def point_cloud_msg(points, colors, parent_frame):
-
-    ros_dtype = PointField.FLOAT32
-    dtype = np.float32
-    itemsize = np.dtype(dtype).itemsize # A 32-bit float takes 4 bytes.
-
-    data = np.hstack([points, colors]).astype(dtype).tobytes()
-    # data = points.astype(dtype).tobytes() 
-
-    # The fields specify what the bytes represents. The first 4 bytes 
-    # represents the x-coordinate, the next 4 the y-coordinate, etc.
-    fields = [PointField(
-        name=n, offset=i*itemsize, datatype=ros_dtype, count=1)
-        for i, n in enumerate('xyzrgb')]
-
-    # The PointCloud2 message also has a header which specifies which 
-    # coordinate frame it is represented in. 
-    header = Header(frame_id=parent_frame)
-
-    return PointCloud2(
-        header=header,
-        height=1, 
-        width=points.shape[0],
-        is_dense=False,
-        is_bigendian=False,
-        fields=fields,
-        point_step=(itemsize * 6), # Every point consists of three float32s.
-        row_step=(itemsize * 6 * points.shape[0]), 
-        data=data
-    )
-
-def broadcast_color_pcd(pcds_o3d: List[o3d.geometry.PointCloud], colors: np.array):
-    """Take a list with n_objects pcds, array of size (n_objects, 3) and returns an array of size (n_points, 3)."""
-    pcd_points = [np.asarray(p.points) for p in pcds_o3d]
-    pcd_colors = []
-    for i, p in enumerate(pcd_points):
-        c = colors[i].reshape((1, 3))
-        c = np.tile(c, (len(p), 1))
-        pcd_colors.append(c)
-    pcd_colors = np.concatenate(pcd_colors)
-
-    return pcd_colors
 
 
 class SceneGraphNode(Node):
@@ -296,7 +247,7 @@ class SceneGraphNode(Node):
         self.pcd_query_publisher.publish(pcd_msg)
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="main_ros")
+@hydra.main(version_base=None, config_path="conf", config_name="ros_scene_graph.yaml")
 def main(cfg: DictConfig):
     set_seed(cfg.seed)
 
