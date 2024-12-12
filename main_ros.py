@@ -113,18 +113,14 @@ class SceneGraphNode(Node):
         )
 
         # Main scene graph
-        self.main_map = hydra.utils.instantiate(self.hydra_cfg.mapping)
-        self.n_segments = 0
+        self.init_map()
         self.get_logger().info("Scene Graph ROS Node is up!")
 
-        # Query service
+        # Services
         self.clip_query_service = self.create_service(CLIPRetrieval, "concept_graphs/clip_query", self.clip_query_service_callback)
-
-        # Graph Processing service
         self.process_graph_service = self.create_service(ProcessGraph, "concept_graphs/process_graph", self.process_graph_service_callback)
-
-        # Export Map service
         self.export_map_service = self.create_service(Empty, "concept_graphs/export_map", self.export_map_service_callback)
+        self.reset_map_service = self.create_service(Empty, "concept_graphs/reset_map", self.reset_map_service_callback)
 
         # Point cloud publishers
         self.pcd_rgb_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/rgb', 10)
@@ -138,6 +134,12 @@ class SceneGraphNode(Node):
         self.pcd_similarity_timer = self.create_timer(timer_period, self.pcd_similarity_callback)
         self.pcd_query_timer = self.create_timer(timer_period, self.pcd_query_callback)
 
+        self.random_colors = np.random.rand(10000, 3)
+
+    def init_map(self):
+        self.main_map = hydra.utils.instantiate(self.hydra_cfg.mapping)
+        self.n_segments = 0
+
         self.pcds_o3d = None
         self.pcd_points = None
         self.pcd_rgb = None
@@ -145,11 +147,14 @@ class SceneGraphNode(Node):
         self.pcd_similarity = None
         self.pcd_query_points = None
         self.pcd_query_rgb = None
-        self.random_colors = np.random.rand(10000, 3)
 
 
     def listener_callback(self, msg):
-        frame = decode_RGBD_msg(msg, self.cv_bridge, self.tf_buffer, self.tf_frame, self.get_logger(), depth_scale=self.hydra_cfg.dataset.depth_scale)
+        try:
+            frame = decode_RGBD_msg(msg, self.cv_bridge, self.tf_buffer, self.tf_frame, self.get_logger(), depth_scale=self.hydra_cfg.dataset.depth_scale)
+        except Exception as e:
+            self.get_logger().error(f"Failed to decode RGBD frame: {e}...")
+            return
 
         frame["rgb"] = frame["rgb"][:, :, [2, 1, 0]] # BGR
 
@@ -226,31 +231,38 @@ class SceneGraphNode(Node):
 
 
     def export_map_service_callback(self, request, response):
-        output_dir = Path(self.hydra_cfg.output_dir)
-        now = datetime.datetime.now()
-        date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
-        output_dir_map = output_dir / f"ovmm_{date_time}"
+        if len(self.main_map):
+            output_dir = Path(self.hydra_cfg.output_dir)
+            now = datetime.datetime.now()
+            date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
+            output_dir_map = output_dir / f"ovmm_{date_time}"
 
-        self.get_logger().info(f"Saving map, images and config to {output_dir_map}...")
-        grid_image_path = output_dir_map / "object_viz"
-        os.makedirs(grid_image_path, exist_ok=False)
-        self.main_map.save_object_grids(grid_image_path)
+            self.get_logger().info(f"Saving map, images and config to {output_dir_map}...")
+            grid_image_path = output_dir_map / "object_viz"
+            os.makedirs(grid_image_path, exist_ok=False)
+            self.main_map.save_object_grids(grid_image_path)
 
-        # Also export some data to standard files
-        self.main_map.export(output_dir_map)
+            # Also export some data to standard files
+            self.main_map.export(output_dir_map)
 
-        # Hydra config
-        OmegaConf.save(self.hydra_cfg, output_dir_map / "config.yaml")
+            # Hydra config
+            OmegaConf.save(self.hydra_cfg, output_dir_map / "config.yaml")
 
-        # Create symlink to latest map
-        symlink = output_dir / "latest_map"
-        symlink.unlink(missing_ok=True)
-        os.symlink(output_dir_map, symlink)
-        self.get_logger().info(f"Created symlink to latest map at {symlink}")
+            # Create symlink to latest map
+            symlink = output_dir / "latest_map"
+            symlink.unlink(missing_ok=True)
+            os.symlink(output_dir_map, symlink)
+            self.get_logger().info(f"Created symlink to latest map at {symlink}")
 
-        # Move debug directory if it exists
-        if os.path.exists(output_dir / "debug"):
-            os.rename(output_dir / "debug", output_dir_map / "debug")
+            # Move debug directory if it exists
+            if os.path.exists(output_dir / "debug"):
+                os.rename(output_dir / "debug", output_dir_map / "debug")
+
+        return response
+
+    def reset_map_service_callback(self, request, response):
+        self.init_map()
+        self.get_logger().info("Scene Graph Reset Complete!")
 
         return response
 
