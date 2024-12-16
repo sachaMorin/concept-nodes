@@ -12,6 +12,12 @@ denoising_eps: 0.03
 max_points_pcd: 8000
 final_min_segments: 1
 
+perception:
+  segment_scoring_method: area
+  bg_sim_thresh: 0.615
+  bg_classes: null
+  crop_bg_color: 255
+
 mapping:
   n_min_segments: 2
   filter_min_every: 1

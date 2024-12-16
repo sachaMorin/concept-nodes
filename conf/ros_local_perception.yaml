@@ -11,7 +11,7 @@ perception:
   segment_scoring_method: area
   bg_sim_thresh: 0.615
   bg_classes: null
-  crop_bg_color: null
+  crop_bg_color: 255
 
 
 device: cuda:1
