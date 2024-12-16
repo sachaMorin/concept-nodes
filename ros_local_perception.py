@@ -37,7 +37,7 @@ class LocalPerceptionNode(Node):
         self.cv_bridge = CvBridge()
 
         # Frame listener setup
-        self.tf_frame = "camera_color_optical_frame"
+        self.tf_frame = "locobot/arm_base_link"
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -90,8 +90,15 @@ class LocalPerceptionNode(Node):
         max_ = np.max(sim)
         argmax = np.argmax(sim)
 
+
         if max_ > 0.63:
-            self.pcd_points = segments["pcd_points"][argmax]
+            # Points are in optical frame. For pcd messages, we need to transform them to self.tf_frame
+            rot = frame["pose"][:3, :3]
+            t = frame["pose"][:3, 3].reshape((1, 3))
+            pcd_points = segments["pcd_points"][argmax]
+            pcd_points = pcd_points @ rot.T + t
+
+            self.pcd_points = pcd_points
             self.pcd_rgb = segments["pcd_rgb"][argmax] / 255
             response.detected = True
             response.object_pcd = point_cloud_msg(self.pcd_points, self.pcd_rgb, self.tf_frame)
@@ -99,6 +106,7 @@ class LocalPerceptionNode(Node):
             self.pcd_points = None
             self.pcd_rgb = None
             response.detected = False
+        self.get_logger().info(f"Sending back response to relay...")
         
         return response
 
