@@ -25,7 +25,7 @@ from ovmm_ros.utils.pcd import broadcast_color_pcd, point_cloud_msg
 from ovmm_ros_msg.msg import RGBDImage
 from ovmm_ros_msg.srv import CLIPRetrieval, ProcessGraph
 
-from concept_graphs.utils import set_seed
+from concept_graphs.utils import set_seed, load_map
 from concept_graphs.viz.utils import similarities_to_rgb
 
 
@@ -38,6 +38,7 @@ class SceneGraphNode(Node):
 
     def __init__(self, hydra_cfg):
         super().__init__('scene_graph')
+        self.hydra_cfg = hydra_cfg
 
         # ROS
         self.subscription = self.create_subscription(
@@ -54,26 +55,29 @@ class SceneGraphNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # Concept Graphs
-        # Perception Pipeline
-        self.hydra_cfg = hydra_cfg
-        segmentation_model = hydra.utils.instantiate(self.hydra_cfg.segmentation)
-        ft_extractor = hydra.utils.instantiate(self.hydra_cfg.ft_extraction)
-        self.perception_pipeline = hydra.utils.instantiate(
-            self.hydra_cfg.perception, segmentation_model=segmentation_model, ft_extractor=ft_extractor
-        )
-
-        # Main scene graph
-        self.init_map()
-        self.get_logger().info("Scene Graph ROS Node is up!")
-
         # Services
         self.clip_query_service = self.create_service(CLIPRetrieval, "concept_graphs/clip_query", self.clip_query_service_callback)
         self.process_graph_service = self.create_service(ProcessGraph, "concept_graphs/process_graph", self.process_graph_service_callback)
         self.export_map_service = self.create_service(Empty, "concept_graphs/export_map", self.export_map_service_callback)
+        self.pickle_service = self.create_service(Empty, "concept_graphs/pickle", self.pickle_service_callback)
         self.reset_map_service = self.create_service(Empty, "concept_graphs/reset_map", self.reset_map_service_callback)
 
+        # Where to save stuff
+        self.output_dir = Path(self.hydra_cfg.output_dir)
+        now = datetime.datetime.now()
+        date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
+        self.output_dir_map = self.output_dir / f"ovmm_{date_time}"
+        os.makedirs(self.output_dir_map, exist_ok=True)
+
         # Point cloud publishers
+        self.pcds_o3d = None
+        self.pcd_points = None
+        self.pcd_rgb = None
+        self.pcd_instance = None
+        self.pcd_similarity = None
+        self.pcd_query_points = None
+        self.pcd_query_rgb = None
+
         self.pcd_rgb_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/rgb', 10)
         self.pcd_instance_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/instance', 10)
         self.pcd_similarity_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/similarity', 10)
@@ -85,19 +89,34 @@ class SceneGraphNode(Node):
         self.pcd_similarity_timer = self.create_timer(timer_period, self.pcd_similarity_callback)
         self.pcd_query_timer = self.create_timer(timer_period, self.pcd_query_callback)
 
+        # For visualization
         self.random_colors = np.random.rand(10000, 3)
 
-    def init_map(self):
-        self.main_map = hydra.utils.instantiate(self.hydra_cfg.mapping)
-        self.n_segments = 0
+        # Concept Graphs
+        # Perception Pipeline
+        segmentation_model = hydra.utils.instantiate(self.hydra_cfg.segmentation)
+        ft_extractor = hydra.utils.instantiate(self.hydra_cfg.ft_extraction)
+        self.perception_pipeline = hydra.utils.instantiate(
+            self.hydra_cfg.perception, segmentation_model=segmentation_model, ft_extractor=ft_extractor
+        )
 
-        self.pcds_o3d = None
-        self.pcd_points = None
-        self.pcd_rgb = None
-        self.pcd_instance = None
-        self.pcd_similarity = None
-        self.pcd_query_points = None
-        self.pcd_query_rgb = None
+        # Main scene graph
+        self.pickle_path = Path(self.hydra_cfg.pickle_path) if self.hydra_cfg.pickle_path else None
+        self.init_map()
+        self.get_logger().info("Scene Graph ROS Node is up!")
+
+
+    def init_map(self):
+        if self.pickle_path is not None and self.pickle_path.exists():
+            self.main_map = load_map(self.pickle_path)
+            self.n_segments = self.main_map.n_segments
+
+            self.get_logger().info(f"Loaded map from {self.pickle_path}")
+        else:
+            # From scratch
+            self.main_map = hydra.utils.instantiate(self.hydra_cfg.mapping)
+            self.n_segments = 0
+        self.update_pcds()
 
 
     def listener_callback(self, msg):
@@ -124,7 +143,15 @@ class SceneGraphNode(Node):
 
     def update_pcds(self):
         if not len(self.main_map):
+            self.pcds_o3d = None
+            self.pcd_points = None
+            self.pcd_rgb = None
+            self.pcd_instance = None
+            self.pcd_similarity = None
+            self.pcd_query_points = None
+            self.pcd_query_rgb = None
             return
+
         self.pcds_o3d = self.main_map.pcd_o3d
 
         pcd_points = [np.asarray(p.points) for p in self.pcds_o3d]
@@ -180,34 +207,34 @@ class SceneGraphNode(Node):
 
         return response
 
+    def pickle_service_callback(self, request, response):
+        if len(self.main_map):
+            self.get_logger().info(f"Saving map pickle to {self.output_dir_map}...")
+            self.main_map.save(self.output_dir_map / "map.pkl")
+        return response
 
     def export_map_service_callback(self, request, response):
         if len(self.main_map):
-            output_dir = Path(self.hydra_cfg.output_dir)
-            now = datetime.datetime.now()
-            date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
-            output_dir_map = output_dir / f"ovmm_{date_time}"
-
-            self.get_logger().info(f"Saving map, images and config to {output_dir_map}...")
-            grid_image_path = output_dir_map / "object_viz"
+            self.get_logger().info(f"Saving map, images and config to {self.output_dir_map}...")
+            grid_image_path = self.output_dir_map / "object_viz"
             os.makedirs(grid_image_path, exist_ok=False)
             self.main_map.save_object_grids(grid_image_path)
 
             # Also export some data to standard files
-            self.main_map.export(output_dir_map)
+            self.main_map.export(self.output_dir_map)
 
             # Hydra config
-            OmegaConf.save(self.hydra_cfg, output_dir_map / "config.yaml")
+            OmegaConf.save(self.hydra_cfg, self.output_dir_map / "config.yaml")
 
             # Create symlink to latest map
-            symlink = output_dir / "latest_map"
+            symlink = self.output_dir / "latest_map"
             symlink.unlink(missing_ok=True)
-            os.symlink(output_dir_map, symlink)
+            os.symlink(self.output_dir_map, symlink)
             self.get_logger().info(f"Created symlink to latest map at {symlink}")
 
             # Move debug directory if it exists
-            if os.path.exists(output_dir / "debug"):
-                os.rename(output_dir / "debug", output_dir_map / "debug")
+            if os.path.exists(self.output_dir / "debug"):
+                os.rename(self.output_dir / "debug", self.output_dir_map / "debug")
 
         return response
 

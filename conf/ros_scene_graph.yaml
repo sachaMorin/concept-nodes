@@ -11,6 +11,7 @@ voxel_size: 0.01
 denoising_eps: 0.03
 max_points_pcd: 8000
 final_min_segments: 1
+pickle_path: null # Load scene graph from pickle file if provided
 
 perception:
   segment_scoring_method: area
