@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 class SceneGraphNode(Node):
 
     def __init__(self, hydra_cfg):
-        super().__init__('scene_graph')
+        super().__init__('ovmm_scene_graph')
         self.hydra_cfg = hydra_cfg
 
         # ROS
@@ -58,12 +58,12 @@ class SceneGraphNode(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # Services
-        self.clip_query_service = self.create_service(CLIPRetrieval, "concept_graphs/clip_query", self.clip_query_service_callback)
-        self.process_graph_service = self.create_service(ProcessGraph, "concept_graphs/process_graph", self.process_graph_service_callback)
-        self.export_map_service = self.create_service(Empty, "concept_graphs/export_map", self.export_map_service_callback)
-        self.pickle_service = self.create_service(Empty, "concept_graphs/pickle", self.pickle_service_callback)
-        self.reset_map_service = self.create_service(Empty, "concept_graphs/reset_map", self.reset_map_service_callback)
-        self.local_perception_srv = self.create_service(LocalPerception, "local_perception_server", self.local_perception_service_callback)
+        self.clip_query_service = self.create_service(CLIPRetrieval, "ovmm/scene_graph/clip_query", self.clip_query_service_callback)
+        self.process_graph_service = self.create_service(ProcessGraph, "ovmm/scene_graph/process_graph", self.process_graph_service_callback)
+        self.export_map_service = self.create_service(Empty, "ovmm/scene_graph/export_map", self.export_map_service_callback)
+        self.pickle_service = self.create_service(Empty, "ovmm/scene_graph/pickle", self.pickle_service_callback)
+        self.reset_map_service = self.create_service(Empty, "ovmm/scene_graph/reset_map", self.reset_map_service_callback)
+        self.local_perception_srv = self.create_service(LocalPerception, "ovmm/local_perception_server", self.local_perception_service_callback)
 
         # Where to save stuff
         self.output_dir = Path(self.hydra_cfg.output_dir)
@@ -81,11 +81,11 @@ class SceneGraphNode(Node):
         self.pcd_query_points = None
         self.pcd_query_rgb = None
 
-        self.pcd_rgb_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/rgb', 10)
-        self.pcd_instance_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/instance', 10)
-        self.pcd_similarity_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/similarity', 10)
-        self.pcd_query_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/query', 10)
-        self.pcd_local_publisher = self.create_publisher(PointCloud2, 'local_perception/point_cloud', 10)
+        self.pcd_rgb_publisher = self.create_publisher(PointCloud2, 'ovmm/scene_graph/point_cloud/rgb', 10)
+        self.pcd_instance_publisher = self.create_publisher(PointCloud2, 'ovmm/scene_graph/point_cloud/instance', 10)
+        self.pcd_similarity_publisher = self.create_publisher(PointCloud2, 'ovmm/scene_graph/point_cloud/similarity', 10)
+        self.pcd_query_publisher = self.create_publisher(PointCloud2, 'ovmm/scene_graph/point_cloud/query', 10)
+        self.pcd_local_publisher = self.create_publisher(PointCloud2, 'ovmm/local_perception_server/point_cloud', 10)
 
         timer_period = 1.0  # seconds
         self.pcd_instance_timer = self.create_timer(timer_period, self.pcd_instance_callback)
