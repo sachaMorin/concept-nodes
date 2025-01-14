@@ -22,8 +22,8 @@ from sensor_msgs.msg import PointCloud2
 
 from ovmm_ros.utils.rgbd import decode_RGBD_msg
 from ovmm_ros.utils.pcd import broadcast_color_pcd, point_cloud_msg
-from ovmm_ros_msg.msg import RGBDImage
-from ovmm_ros_msg.srv import CLIPRetrieval, ProcessGraph
+from ovmm_ros_interfaces.msg import RGBDImage
+from ovmm_ros_interfaces.srv import CLIPRetrieval, ProcessGraph
 
 from concept_graphs.utils import set_seed, load_map
 from concept_graphs.viz.utils import similarities_to_rgb

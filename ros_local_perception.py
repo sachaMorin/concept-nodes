@@ -14,8 +14,8 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 from ovmm_ros.utils.rgbd import decode_RGBD_msg
-from ovmm_ros_msg.msg import RGBDImage
-from ovmm_ros_msg.srv import LocalPerception
+from ovmm_ros_interfaces.msg import RGBDImage
+from ovmm_ros_interfaces.srv import LocalPerception
 
 from concept_graphs.utils import set_seed
 
