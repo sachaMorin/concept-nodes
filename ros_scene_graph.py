@@ -8,6 +8,7 @@ from pathlib import Path
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import numpy as np
+import torch
 
 import rclpy
 from rclpy.node import Node
@@ -23,7 +24,7 @@ from sensor_msgs.msg import PointCloud2
 from ovmm_ros.utils.rgbd import decode_RGBD_msg
 from ovmm_ros.utils.pcd import broadcast_color_pcd, point_cloud_msg
 from ovmm_ros_interfaces.msg import RGBDImage
-from ovmm_ros_interfaces.srv import CLIPRetrieval, ProcessGraph
+from ovmm_ros_interfaces.srv import CLIPRetrieval, ProcessGraph, LocalPerception
 
 from concept_graphs.utils import set_seed, load_map
 from concept_graphs.viz.utils import similarities_to_rgb
@@ -52,6 +53,7 @@ class SceneGraphNode(Node):
 
         # Frame listener setup
         self.tf_frame = "map"
+        self.local_tf_frame = "locobot/arm_base_link"
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -61,6 +63,7 @@ class SceneGraphNode(Node):
         self.export_map_service = self.create_service(Empty, "concept_graphs/export_map", self.export_map_service_callback)
         self.pickle_service = self.create_service(Empty, "concept_graphs/pickle", self.pickle_service_callback)
         self.reset_map_service = self.create_service(Empty, "concept_graphs/reset_map", self.reset_map_service_callback)
+        self.local_perception_srv = self.create_service(LocalPerception, "local_perception_server", self.local_perception_service_callback)
 
         # Where to save stuff
         self.output_dir = Path(self.hydra_cfg.output_dir)
@@ -82,12 +85,14 @@ class SceneGraphNode(Node):
         self.pcd_instance_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/instance', 10)
         self.pcd_similarity_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/similarity', 10)
         self.pcd_query_publisher = self.create_publisher(PointCloud2, 'concept_graphs/point_cloud/query', 10)
+        self.pcd_local_publisher = self.create_publisher(PointCloud2, 'local_perception/point_cloud', 10)
 
         timer_period = 1.0  # seconds
         self.pcd_instance_timer = self.create_timer(timer_period, self.pcd_instance_callback)
         self.pcd_rgb_timer = self.create_timer(timer_period, self.pcd_rgb_callback)
         self.pcd_similarity_timer = self.create_timer(timer_period, self.pcd_similarity_callback)
         self.pcd_query_timer = self.create_timer(timer_period, self.pcd_query_callback)
+        self.pcd_local_timer = self.create_timer(timer_period, self.pcd_local_callback)
 
         # For visualization
         self.random_colors = np.random.rand(10000, 3)
@@ -150,6 +155,8 @@ class SceneGraphNode(Node):
             self.pcd_similarity = None
             self.pcd_query_points = None
             self.pcd_query_rgb = None
+            self.pcd_local_points = None
+            self.pcd_local_rgb = None
             return
 
         self.pcds_o3d = self.main_map.pcd_o3d
@@ -244,6 +251,53 @@ class SceneGraphNode(Node):
 
         return response
 
+    def local_perception_service_callback(self, request, response):
+        self.get_logger().info(f"Received Local Perception Request: {request.query}")
+        try:
+            frame = decode_RGBD_msg(request.rgbd, self.cv_bridge, self.tf_buffer, self.local_tf_frame, self.get_logger(), depth_scale=self.hydra_cfg.dataset.depth_scale)
+        except Exception as e:
+            self.get_logger().error(f"Failed to decode RGBD frame: {e}...")
+            response.detected = False
+            return response
+
+        frame["rgb"] = frame["rgb"][:, :, [2, 1, 0]] # BGR
+
+        segments = self.perception_pipeline(frame["rgb"], frame["depth"], frame["intrinsics"])
+
+        if segments is None:
+            response.detected = False
+            self.get_logger().info("No segments detected...")
+            return response
+
+        query_ft = self.perception_pipeline.ft_extractor.encode_text([request.query])
+        segments_ft = torch.from_numpy(segments["features"]).to(self.perception_pipeline.ft_extractor.device)
+
+        sim = self.perception_pipeline.semantic_similarity(query_ft, segments_ft).cpu().numpy()
+
+        self.get_logger().info(f"Detected {len(segments['scores'])} segments with similarities {sim}")
+
+        max_ = np.max(sim)
+        argmax = np.argmax(sim)
+
+        if max_ > 0.63:
+            # Points are in optical frame. For pcd messages, we need to transform them to self.local_tf_frame
+            rot = frame["pose"][:3, :3]
+            t = frame["pose"][:3, 3].reshape((1, 3))
+            pcd_points = segments["pcd_points"][argmax]
+            pcd_points = pcd_points @ rot.T + t
+
+            self.pcd_local_points = pcd_points
+            self.pcd_local_rgb = segments["pcd_rgb"][argmax] / 255
+            response.detected = True
+            response.object_pcd = point_cloud_msg(self.pcd_local_points, self.pcd_local_rgb, self.local_tf_frame)
+        else:
+            self.pcd_local_points = None
+            self.pcd_local_rgb = None
+            response.detected = False
+        self.get_logger().info(f"Sending back response to relay...")
+        
+        return response
+
 
     def pcd_instance_callback(self):
         if self.pcds_o3d is None:
@@ -272,6 +326,13 @@ class SceneGraphNode(Node):
 
         pcd_msg = point_cloud_msg(self.pcd_query_points, self.pcd_query_rgb, self.tf_frame)
         self.pcd_query_publisher.publish(pcd_msg)
+
+    def pcd_local_callback(self):
+        if self.pcd_local_points is None or self.pcd_local_rgb is None:
+            return
+
+        pcd_msg = point_cloud_msg(self.pcd_local_points, self.pcd_local_rgb, self.local_tf_frame)
+        self.pcd_local_publisher.publish(pcd_msg)
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="ros_scene_graph.yaml")
