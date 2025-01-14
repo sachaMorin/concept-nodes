@@ -64,6 +64,7 @@ class SceneGraphNode(Node):
         self.pickle_service = self.create_service(Empty, "ovmm/scene_graph/pickle", self.pickle_service_callback)
         self.reset_map_service = self.create_service(Empty, "ovmm/scene_graph/reset_map", self.reset_map_service_callback)
         self.local_perception_srv = self.create_service(LocalPerception, "ovmm/local_perception_server", self.local_perception_service_callback)
+        self.last_obj_clip_ft = None
 
         # Where to save stuff
         self.output_dir = Path(self.hydra_cfg.output_dir)
@@ -182,8 +183,11 @@ class SceneGraphNode(Node):
 
         best_match_idx = sim_objects.argmax()
 
-        sim_rgb = np.array(similarities_to_rgb(sim_objects, "viridis")) / 255
+        # Cache features for potential local perception queries
+        self.last_obj_clip_ft = self.main_map.semantic_tensor[best_match_idx].unsqueeze(0).clone()
 
+        # Point clouds
+        sim_rgb = np.array(similarities_to_rgb(sim_objects, "viridis")) / 255
         self.pcd_similarity = broadcast_color_pcd(self.pcds_o3d, sim_rgb)
 
         # Get most similar object
@@ -269,7 +273,13 @@ class SceneGraphNode(Node):
             self.get_logger().info("No segments detected...")
             return response
 
-        query_ft = self.perception_pipeline.ft_extractor.encode_text([request.query])
+        if request.query == "SCENE_GRAPH_QUERY" and self.last_obj_clip_ft is not None:
+            # Use features of last object we queried in the scene graph
+            query_ft = self.last_obj_clip_ft
+        else:
+            # Natural language
+            query_ft = self.perception_pipeline.ft_extractor.encode_text([request.query])
+
         segments_ft = torch.from_numpy(segments["features"]).to(self.perception_pipeline.ft_extractor.device)
 
         sim = self.perception_pipeline.semantic_similarity(query_ft, segments_ft).cpu().numpy()
