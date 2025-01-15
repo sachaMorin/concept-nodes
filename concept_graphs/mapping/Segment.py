@@ -7,6 +7,7 @@ class Segment:
         self,
         rgb: np.ndarray,
         mask: np.ndarray,
+        point_map: np.ndarray,
         semantic_ft: np.ndarray,
         score: float,
         pcd_points: np.ndarray,
@@ -15,6 +16,7 @@ class Segment:
     ):
         self.rgb = rgb
         self.mask = mask
+        self.point_map = point_map
         self.semantic_ft = semantic_ft
         self.score = score
         self.pcd_points = pcd_points

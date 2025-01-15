@@ -13,6 +13,7 @@ class Object:
         score: float,
         rgb: np.ndarray,
         mask: np.ndarray,
+        point_map: np.ndarray,
         semantic_ft: np.ndarray,
         camera_pose: np.ndarray,
         pcd_points: np.ndarray,
@@ -52,10 +53,14 @@ class Object:
         pcd_points = np.array(self.pcd.points)
         pcd_rgb = np.array(self.pcd.colors)
 
+        # Point map to map frame
+        point_map = point_map @ camera_pose[:3, :3] + camera_pose[:3, 3]
+
         # Create first segment and push to heap
         segment = Segment(
             rgb=rgb,
             mask=mask,
+            point_map=point_map,
             semantic_ft=semantic_ft,
             camera_pose=camera_pose,
             score=score,

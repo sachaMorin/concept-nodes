@@ -149,6 +149,7 @@ class ObjectMap:
         self,
         rgb_crops: List[np.ndarray],
         mask_crops: List[np.ndarray],
+        point_map_crops: List[np.ndarray],
         features: np.ndarray,
         scores: np.ndarray,
         pcd_points: List[np.ndarray],
@@ -172,6 +173,7 @@ class ObjectMap:
                 object = self.object_factory(
                     rgb=rgb_crops[i],
                     mask=mask_crops[i],
+                    point_map=point_map_crops[i],
                     semantic_ft=np.copy(features[i]),
                     pcd_points=pcd_points[i],
                     pcd_rgb=pcd_rgb[i],
@@ -366,8 +368,11 @@ class ObjectMap:
         for i, obj in enumerate(self):
             path_rgb = path / "segments" / str(i) / "rgb"
             path_mask = path / "segments" / str(i) / "mask"
+            path_point_map = path / "segments" / str(i) / "point_map"
+
             os.makedirs(path_rgb, exist_ok=True)
             os.makedirs(path_mask, exist_ok=True)
+            os.makedirs(path_point_map, exist_ok=True)
 
             for j, seg in enumerate(obj.segments.get_sorted()):
                 rgb = seg.rgb
@@ -377,6 +382,8 @@ class ObjectMap:
                     cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
                 )
                 cv2.imwrite(str(path_mask / f"{str(j).zfill(3)}.png"), mask)
+                point_map = seg.point_map
+                np.save(path_point_map / f"{str(j).zfill(3)}.npy", point_map)
 
     def to(self, device: str):
         self.device = device

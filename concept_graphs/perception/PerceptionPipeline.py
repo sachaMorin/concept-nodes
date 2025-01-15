@@ -128,9 +128,11 @@ class PerceptionPipeline:
 
         features = features.cpu().numpy()
 
-        pcd_points, pcd_rgb = rgbd_to_object_pcd(
+        pcd_points, pcd_rgb, point_map = rgbd_to_object_pcd(
             rgb, depth, masks, intrinsics, depth_trunc=self.depth_trunc
         )
+
+        point_map_crops = extract_mask_crops([point_map] * len(bbox), bbox) 
 
         if self.debug_images:
             from concept_graphs.viz.segmentation import plot_segments
@@ -148,6 +150,7 @@ class PerceptionPipeline:
         result = dict(
             rgb_crops=filter_list(rgb_crops, mask),
             mask_crops=filter_list(mask_crops, mask),
+            point_map_crops=filter_list(point_map_crops, mask),
             features=features[mask],
             pcd_points=filter_list(pcd_points, mask),
             pcd_rgb=filter_list(pcd_rgb, mask),

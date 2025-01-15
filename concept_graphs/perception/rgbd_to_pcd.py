@@ -8,7 +8,7 @@ def rgbd_to_object_pcd(
     masks: List[np.ndarray],
     intrinsics: np.ndarray,
     depth_trunc: float,
-) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+) -> Tuple[List[np.ndarray], List[np.ndarray], np.ndarray]:
     N, H, W = masks.shape
     fx, fy, cx, cy = (
         intrinsics[0, 0],
@@ -34,4 +34,4 @@ def rgbd_to_object_pcd(
         object_pcd_points.append(points[keep])
         object_pcd_rgb.append(rgb[keep])
 
-    return object_pcd_points, object_pcd_rgb
+    return object_pcd_points, object_pcd_rgb, points.reshape((H, W, 3))
