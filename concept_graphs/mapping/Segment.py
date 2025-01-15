@@ -22,11 +22,11 @@ class Segment:
 
     @property
     def pcd_points(self):
-        return self.point_map[self.mask]
+        return self.point_map[self.mask == 2]
 
     @property
     def pcd_rgb(self):
-        return self.rgb[self.mask]
+        return self.rgb[self.mask == 2]
 
     def __lt__(self, other):
         return self.score < other.score

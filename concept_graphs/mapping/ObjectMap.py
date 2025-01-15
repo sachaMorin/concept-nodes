@@ -372,12 +372,13 @@ class ObjectMap:
             for j, seg in enumerate(obj.segments.get_sorted()):
                 rgb = seg.rgb
                 mask = seg.mask * 255
+                point_map = seg.point_map
+
                 cv2.imwrite(
                     str(path_rgb / f"{str(j).zfill(3)}.png"),
                     cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
                 )
-                cv2.imwrite(str(path_mask / f"{str(j).zfill(3)}.png"), mask)
-                point_map = seg.point_map
+                np.save(path_mask / f"{str(j).zfill(3)}.npy", mask)
                 np.save(path_point_map / f"{str(j).zfill(3)}.npy", point_map)
 
     def to(self, device: str):

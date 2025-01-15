@@ -66,9 +66,9 @@ class PerceptionPipeline:
     def __call__(
         self, rgb: np.ndarray, depth: np.ndarray, intrinsics: np.ndarray, camera_pose: np.ndarray,
     ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
-        masks, bbox, conf = self.segmentation_model(rgb)
+        object_masks, bbox, conf = self.segmentation_model(rgb)
 
-        if masks is None or bbox is None or conf is None:
+        if object_masks is None or bbox is None or conf is None:
             return None
 
         # Penalty if original bbox touches image border
@@ -86,15 +86,15 @@ class PerceptionPipeline:
             )
 
         if self.mask_subtract_contained:
-            masks = mask_subtract_contained(bbox, masks)
+            object_masks = mask_subtract_contained(bbox, object_masks)
 
-        masks, bbox, conf = (
-            masks.cpu().numpy(),
+        object_masks, bbox, conf = (
+            object_masks.cpu().numpy(),
             bbox.cpu().numpy(),
             conf.cpu().numpy(),
         )
 
-        areas = masks.sum(axis=-1).sum(axis=-1)
+        areas = object_masks.sum(axis=-1).sum(axis=-1)
 
         # Choose scoring method
         if self.segment_scoring_method == "confidence":
@@ -112,12 +112,12 @@ class PerceptionPipeline:
 
         # Segment filtering
         keep = areas > self.min_mask_area_px
-        masks, bbox, scores = masks[keep], bbox[keep], scores[keep]
+        object_masks, bbox, scores = object_masks[keep], bbox[keep], scores[keep]
 
         # Crops and Feature extraction
-        mask_crops = extract_mask_crops(masks, bbox)
-        rgb_crops = extract_rgb_crops(rgb, bbox, mask_crops)
-        rgb_crops_bg = extract_rgb_crops(rgb, bbox, mask_crops, self.crop_bg_color)
+        object_mask_crops = extract_mask_crops(object_masks, bbox)
+        rgb_crops = extract_rgb_crops(rgb, bbox, object_mask_crops)
+        rgb_crops_bg = extract_rgb_crops(rgb, bbox, object_mask_crops, self.crop_bg_color)
 
         point_map = depth_to_point_map(depth, intrinsics, camera_pose)
         point_map_crops = extract_mask_crops([point_map] * len(bbox), bbox) 
@@ -132,27 +132,35 @@ class PerceptionPipeline:
         else:
             bg = np.zeros(len(features), dtype=bool)
         
-        # Truncate points in the mask if depth is too high
+        # Create point cloud masks
+        # 0: Invalid points.
+        # 1: Object points with invalid depth.
+        # 2: Object points with valid depth.
+        masks = []
         depth_crops = extract_mask_crops([depth] * len(bbox), bbox)
-        for m, d in zip(mask_crops, depth_crops):
-            m[d > self.depth_trunc] = 0.
+        for m, d in zip(object_mask_crops, depth_crops):
+            mask = np.zeros_like(m, dtype=np.uint8)
+            mask[m] = 1
+            valid_depth = (d > 0) & (d < self.depth_trunc)
+            mask[m & valid_depth] = 2
+            masks.append(mask)
 
         if self.debug_images:
             from concept_graphs.viz.segmentation import plot_segments
             import matplotlib.pyplot as plt
 
             img_name = str(self.debug_counter).zfill(7) + ".png"
-            plot_segments(rgb, torch.from_numpy(masks))
+            plot_segments(rgb, torch.from_numpy(object_masks))
             plt.savefig(self.debug_dir / "segments" / img_name)
             plt.close()
             self.debug_counter += 1
 
         # Filter empty point clouds. They can happen at this stage because of depth truncation
-        keep = [m.sum() > self.min_points_pcd for m in masks]
+        keep = [m.sum() > self.min_points_pcd for m in object_masks]
 
         result = dict(
             rgb_crops=filter_list(rgb_crops, keep),
-            mask_crops=filter_list(mask_crops, keep),
+            mask_crops=filter_list(masks, keep),
             point_map_crops=filter_list(point_map_crops, keep),
             features=features[keep],
             scores=scores[keep],
