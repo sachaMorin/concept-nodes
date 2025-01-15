@@ -43,13 +43,13 @@ def main(cfg: DictConfig):
     main_map = hydra.utils.instantiate(cfg.mapping)
 
     for obs in dataloader:
-        segments = perception_pipeline(obs["rgb"], obs["depth"], obs["intrinsics"])
+        segments = perception_pipeline(obs["rgb"], obs["depth"], obs["intrinsics"], obs["camera_pose"])
 
         if segments is None:
             continue
 
         local_map = hydra.utils.instantiate(cfg.mapping)
-        local_map.from_perception(**segments, camera_pose=obs["camera_pose"])
+        local_map.from_perception(**segments)
 
         main_map += local_map
 

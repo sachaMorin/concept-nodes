@@ -16,8 +16,6 @@ class Object:
         point_map: np.ndarray,
         semantic_ft: np.ndarray,
         camera_pose: np.ndarray,
-        pcd_points: np.ndarray,
-        pcd_rgb: np.ndarray,
         segment_heap_size: int,
         semantic_mode: str,
         timestep_created: int,
@@ -41,21 +39,6 @@ class Object:
         self.caption = "empty"
         self.tag = "empty"
 
-        # Set our first object-level point cloud
-        self.pcd = o3d.geometry.PointCloud()
-        self.pcd.points = o3d.utility.Vector3dVector(pcd_points)
-        self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.0)
-        self.pcd.transform(camera_pose)
-        self.downsample()
-        self.denoise()
-
-        # Use processed pcd for segment
-        pcd_points = np.array(self.pcd.points)
-        pcd_rgb = np.array(self.pcd.colors)
-
-        # Point map to map frame
-        point_map = point_map @ camera_pose[:3, :3] + camera_pose[:3, 3]
-
         # Create first segment and push to heap
         segment = Segment(
             rgb=rgb,
@@ -64,11 +47,18 @@ class Object:
             semantic_ft=semantic_ft,
             camera_pose=camera_pose,
             score=score,
-            pcd_points=pcd_points,
-            pcd_rgb=pcd_rgb,
         )
-
         self.segments.push(segment)
+
+        # Set our first object-level point cloud
+        pcd_rgb = segment.pcd_rgb
+        pcd_points = segment.pcd_points
+
+        self.pcd = o3d.geometry.PointCloud()
+        self.pcd.points = o3d.utility.Vector3dVector(pcd_points)
+        self.pcd.colors = o3d.utility.Vector3dVector(pcd_rgb / 255.0)
+        self.downsample()
+        self.denoise()
 
         self.update_geometry_np()
         self.update_semantic_ft()
@@ -191,9 +181,9 @@ class RunningAverageObject(Object):
         self.semantic_ft = self.segments[0].semantic_ft
 
         # We track an object-level point cloud so we don't need the segment point clouds
-        self.segments[0].pcd_points = None
-        self.segments[0].pcd_rgb = None
-        self.segments[0].semantic_ft = None
+        # self.segments[0].pcd_points = None
+        # self.segments[0].pcd_rgb = None
+        # self.segments[0].semantic_ft = None
 
     def update_geometry(self):
         self.downsample()

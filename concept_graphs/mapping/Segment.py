@@ -10,8 +10,6 @@ class Segment:
         point_map: np.ndarray,
         semantic_ft: np.ndarray,
         score: float,
-        pcd_points: np.ndarray,
-        pcd_rgb: np.ndarray,
         camera_pose: np.ndarray,
     ):
         self.rgb = rgb
@@ -19,10 +17,16 @@ class Segment:
         self.point_map = point_map
         self.semantic_ft = semantic_ft
         self.score = score
-        self.pcd_points = pcd_points
-        self.pcd_rgb = pcd_rgb
         self.camera_pose = camera_pose
         self.id = uuid.uuid4()
+
+    @property
+    def pcd_points(self):
+        return self.point_map[self.mask]
+
+    @property
+    def pcd_rgb(self):
+        return self.rgb[self.mask]
 
     def __lt__(self, other):
         return self.score < other.score

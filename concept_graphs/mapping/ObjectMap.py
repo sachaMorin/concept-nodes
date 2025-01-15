@@ -152,8 +152,6 @@ class ObjectMap:
         point_map_crops: List[np.ndarray],
         features: np.ndarray,
         scores: np.ndarray,
-        pcd_points: List[np.ndarray],
-        pcd_rgb: List[np.ndarray],
         camera_pose: np.ndarray,
         is_bg: np.ndarray,
     ):
@@ -161,10 +159,9 @@ class ObjectMap:
         assert (
             n_objects
             == len(mask_crops)
+            == len(point_map_crops)
             == len(features)
             == len(scores)
-            == len(pcd_points)
-            == len(pcd_rgb)
             == len(is_bg)
         )
 
@@ -175,8 +172,6 @@ class ObjectMap:
                     mask=mask_crops[i],
                     point_map=point_map_crops[i],
                     semantic_ft=np.copy(features[i]),
-                    pcd_points=pcd_points[i],
-                    pcd_rgb=pcd_rgb[i],
                     camera_pose=camera_pose,
                     score=float(scores[i]),
                     timestep_created=self.n_updates,
