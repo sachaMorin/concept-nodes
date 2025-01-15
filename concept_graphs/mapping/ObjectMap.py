@@ -153,7 +153,6 @@ class ObjectMap:
         features: np.ndarray,
         scores: np.ndarray,
         camera_pose: np.ndarray,
-        is_bg: np.ndarray,
     ):
         n_objects = len(rgb_crops)
         assert (
@@ -162,21 +161,19 @@ class ObjectMap:
             == len(point_map_crops)
             == len(features)
             == len(scores)
-            == len(is_bg)
         )
 
         for i in range(len(rgb_crops)):
-            if not is_bg[i]:
-                object = self.object_factory(
-                    rgb=rgb_crops[i],
-                    mask=mask_crops[i],
-                    point_map=point_map_crops[i],
-                    semantic_ft=np.copy(features[i]),
-                    camera_pose=camera_pose,
-                    score=float(scores[i]),
-                    timestep_created=self.n_updates,
-                )
-                self.append(object)
+            object = self.object_factory(
+                rgb=rgb_crops[i],
+                mask=mask_crops[i],
+                point_map=point_map_crops[i],
+                semantic_ft=np.copy(features[i]),
+                camera_pose=camera_pose,
+                score=float(scores[i]),
+                timestep_created=self.n_updates,
+            )
+            self.append(object)
 
         self.collate()
 

@@ -28,7 +28,5 @@ mapping:
 # No background filtering
 perception:
   segment_scoring_method: area
-  bg_sim_thresh: 0.615
-  bg_classes: null
   crop_bg_color: null
 

@@ -7,15 +7,6 @@ inflate_bbox_px: 10
 mask_subtract_contained: true
 min_mask_area_px: 100
 min_points_pcd: 100
-bg_classes:
-  - wall
-  - floor
-  - ceiling
-  - wall with holes
-  - floor with holes
-bg_sim_thresh: 0.605
-crop_bg_color: null  # null: keep bg, 0: black, 255: white
-semantic_similarity:
-  _target_: concept_graphs.mapping.similarity.semantic.CosineSimilarity01
+crop_bg_color: null  # null: keep bg, 0: black, 255: white. Background color for feature extraction
 debug_images: ${debug}
 debug_dir: ${output_dir}/debug

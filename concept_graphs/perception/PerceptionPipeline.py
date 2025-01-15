@@ -28,9 +28,6 @@ class PerceptionPipeline:
         inflate_bbox_px: int,
         depth_trunc: float,
         mask_subtract_contained: bool,
-        semantic_similarity: "SemanticSimilarity" = None,
-        bg_classes: Union[List[str], None] = None,
-        bg_sim_thresh: float = 1.0,
         crop_bg_color: Union[int, None] = None,
         min_mask_area_px: int = 50,
         min_points_pcd: int = 50,
@@ -44,21 +41,11 @@ class PerceptionPipeline:
         self.inflate_bbox_px = inflate_bbox_px
         self.crop_bg_color = crop_bg_color
         self.mask_subtract_contained = mask_subtract_contained
-        self.semantic_similarity = semantic_similarity
-        self.bg_classes = bg_classes
-        self.bg_sim_thresh = bg_sim_thresh
         self.min_mask_area_px = min_mask_area_px
         self.min_points_pcd = min_points_pcd
         self.debug_images = debug_images
         self.debug_dir = Path(debug_dir)
         self.debug_counter = 0
-
-        self.bg_features = None
-
-        # Compute features for bg_class
-        if self.bg_classes is not None:
-            self.bg_features = self.ft_extractor.encode_text(self.bg_classes)
-            self.bg_features.to(self.ft_extractor.device)
 
         if self.debug_images:
             os.makedirs(self.debug_dir / "segments", exist_ok=True)
@@ -124,13 +111,6 @@ class PerceptionPipeline:
 
         features = self.ft_extractor(rgb_crops_bg)
         features = features.cpu().numpy()
-
-        # Try to detect and remove background classes
-        if self.bg_features is not None:
-            sim = self.semantic_similarity(features, self.bg_features)
-            bg = (sim > self.bg_sim_thresh).any(dim=1).cpu().numpy()
-        else:
-            bg = np.zeros(len(features), dtype=bool)
         
         # Create point cloud masks
         # 0: Invalid points.
@@ -164,7 +144,6 @@ class PerceptionPipeline:
             point_map_crops=filter_list(point_map_crops, keep),
             features=features[keep],
             scores=scores[keep],
-            is_bg=bg[keep],
             camera_pose=camera_pose,
         )
 
