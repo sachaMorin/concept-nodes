@@ -340,6 +340,8 @@ class ObjectMap:
                     s.camera_pose.tolist() for s in obj.segments.get_sorted()
                 ],
                 centroid=np.mean(np.asarray(obj.pcd.points), axis=0).tolist(),
+                affordances=obj.affordances,
+                interaction_points=obj.interaction_points,
             )
             annotations.append(obj_ann)
             point_counter += n_points_object
@@ -368,7 +370,7 @@ class ObjectMap:
 
             for j, seg in enumerate(obj.segments.get_sorted()):
                 rgb = seg.rgb
-                mask = seg.mask * 255
+                mask = seg.mask
                 point_map = seg.point_map
 
                 cv2.imwrite(
