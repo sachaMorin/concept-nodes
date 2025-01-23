@@ -1,3 +1,4 @@
+import shutil
 import datetime
 import os
 import time
@@ -88,35 +89,43 @@ def main(cfg: DictConfig):
     if not cfg.save_map:
         return
 
-    output_dir = Path(cfg.output_dir)
-    now = datetime.datetime.now()
-    date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
-    output_dir_map = output_dir / f"{dataset.name}_{cfg.name}_{date_time}"
+    output_dir = Path(cfg.output_dir) / "concept-graphs" /  dataset.dataset_name / dataset.scene
+    # Make dire
+    if output_dir.exists():
+        log.warning(f"Output directory {output_dir} already exists. Overwriting...")
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
 
-    log.info(f"Saving map, images and config to {output_dir_map}...")
-    grid_image_path = output_dir_map / "object_viz"
-    os.makedirs(grid_image_path, exist_ok=False)
-    main_map.save_object_grids(grid_image_path)
+    main_map.export_openlex3d(output_dir)
 
-    # Also export some data to standard files
-    main_map.export(output_dir_map)
+    # now = datetime.datetime.now()
+    # date_time = now.strftime("%Y-%m-%d-%H-%M-%S.%f")
+    # output_dir_map = output_dir / f"{dataset.name}_{cfg.name}_{date_time}"
 
-    # Hydra config
-    OmegaConf.save(cfg, output_dir_map / "config.yaml")
+    # log.info(f"Saving map, images and config to {output_dir_map}...")
+    # grid_image_path = output_dir_map / "object_viz"
+    # os.makedirs(grid_image_path, exist_ok=False)
+    # main_map.save_object_grids(grid_image_path)
 
-    # Few more stats
-    stats = dict(fps=fps, mapping_time=mapping_time, n_objects=n_objects, n_frames=len(dataset))
-    json.dump(stats, open(output_dir_map / "stats.json", "w"))
+    # # Also export some data to standard files
+    # main_map.export(output_dir_map)
 
-    # Create symlink to latest map
-    symlink = output_dir / "latest_map"
-    symlink.unlink(missing_ok=True)
-    os.symlink(output_dir_map, symlink)
-    log.info(f"Created symlink to latest map at {symlink}")
+    # # Hydra config
+    # OmegaConf.save(cfg, output_dir_map / "config.yaml")
 
-    # Move debug directory if it exists
-    if os.path.exists(output_dir / "debug"):
-        os.rename(output_dir / "debug", output_dir_map / "debug")
+    # # Few more stats
+    # stats = dict(fps=fps, mapping_time=mapping_time, n_objects=n_objects, n_frames=len(dataset))
+    # json.dump(stats, open(output_dir_map / "stats.json", "w"))
+
+    # # Create symlink to latest map
+    # symlink = output_dir / "latest_map"
+    # symlink.unlink(missing_ok=True)
+    # os.symlink(output_dir_map, symlink)
+    # log.info(f"Created symlink to latest map at {symlink}")
+
+    # # Move debug directory if it exists
+    # if os.path.exists(output_dir / "debug"):
+    #     os.rename(output_dir / "debug", output_dir_map / "debug")
 
 
 if __name__ == "__main__":

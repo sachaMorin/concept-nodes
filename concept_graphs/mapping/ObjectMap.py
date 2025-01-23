@@ -378,6 +378,38 @@ class ObjectMap:
                 )
                 cv2.imwrite(str(path_mask / f"{str(j).zfill(3)}.png"), mask)
 
+    def export_openlex3d(self, path: str) -> None:
+        # Save semantic tensor
+        semantics = self.semantic_tensor.cpu().numpy()
+        np.save(path / "embeddings.npy", semantics)
+
+        # Export point cloud and the embedding index of each point
+        pcd_merged = o3d.geometry.PointCloud()
+        point_counter = 0
+        index = []
+        tags = []
+
+        for i, obj in enumerate(self):
+            n_points_object = len(obj.pcd.points)
+
+            index += list(range(point_counter, point_counter + n_points_object))
+            pcd_merged += obj.pcd
+
+            point_counter += n_points_object
+
+            tags.append(obj.tag)
+
+        # Save point cloud
+        o3d.io.write_point_cloud(str(path / "point_cloud.pcd"), pcd_merged)
+
+        # Save index as numpy array
+        np.save(path / "index.npy", np.array(index))
+
+        # Save tags to json
+        json_data = dict(tags=tags)
+        with open(path / "tags.json", "w") as f:
+            json.dump(json_data, f)
+
     def to(self, device: str):
         self.device = device
         if self.semantic_tensor is not None:
