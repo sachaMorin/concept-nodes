@@ -392,7 +392,7 @@ class ObjectMap:
         for i, obj in enumerate(self):
             n_points_object = len(obj.pcd.points)
 
-            index += list(range(point_counter, point_counter + n_points_object))
+            index += [i] * n_points_object
             pcd_merged += obj.pcd
 
             point_counter += n_points_object
