@@ -1,4 +1,4 @@
-_target_: rgbd_dataset.datasets.HM3D.HM3D
+_target_: rgbd_dataset.rgbd_dataset.datasets.HM3D.HM3D
 dataset_name: "hm3d"
 base_path: ???
 scene: "00824"
