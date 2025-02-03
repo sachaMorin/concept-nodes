@@ -1,0 +1,16 @@
+# @package _global_
+defaults:
+  - CGDetector
+  - override /segmentation: AutoMobileSAM
+  - _self_
+
+name: "cg"
+sim_thresh: 0.75
+overlap_eps: 0.02
+voxel_size: 0.02
+denoising_eps: 0.08
+max_points_pcd: 8000
+final_min_segments: 3
+
+mapping:
+  n_min_segments: 3
